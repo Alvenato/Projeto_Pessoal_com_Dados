@@ -45,14 +45,16 @@
     <div class="wrapper">
         <nav class="sidebar">
             <div class="sidebar-logo-container">
-                <img src="{{ url_for('static', filename='images/logo2.png') }}" class="sidebar-logo" alt="Logo Menu" onerror="this.style.display='none'">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="sidebar-logo">
             </div>
             <h3 class="sidebar-title">PDV Control</h3>
-            <a href="/admin" class="nav-btn {% if active_page == 'admin' %}active{% endif %}">📊 Histórico de Vendas</a>
-            <a href="/cliente" class="nav-btn {% if active_page == 'cliente' %}active{% endif %}">👤 Cadastrar Cliente</a>
-            <a href="/produto" class="nav-btn {% if active_page == 'produto' %}active{% endif %}">📦 Cadastrar Produto</a>
-            <a href="/caixa" class="nav-btn {% if active_page == 'caixa' %}active{% endif %}">🛒 Frente de Caixa</a>
-            <a href="/logout" class="nav-btn logout">🚪 Sair</a>
+            
+            <a href="/admin" class="nav-btn vendas {% if active_page == 'admin' %}active{% endif %}">Histórico de Vendas</a>
+            <a href="/cliente" class="nav-btn cliente {% if active_page == 'cliente' %}active{% endif %}">Cadastrar Cliente</a>
+            <a href="/produto" class="nav-btn produto {% if active_page == 'produto' %}active{% endif %}">Cadastrar Produto</a>
+            <a href="/caixa" class="nav-btn caixa {% if active_page == 'caixa' %}active{% endif %}">Frente de Caixa</a>
+            
+            <a href="/logout" class="nav-btn logout">Sair</a>
         </nav>
         
         <main class="content">
@@ -112,7 +114,6 @@
                                             {% endfor %}
                                         </select>
                                     </div>
-                                    
                                     <div class="color-container-td"></div>
                                 </td>
                                 <td>
