@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.9">
+    <link rel="stylesheet" href="static/css/style.css">
     <title>Frente de Caixa</title>
     <style>
         .color-badge {
@@ -45,44 +45,39 @@
     <div class="wrapper">
         <nav class="sidebar">
             <div class="sidebar-logo-container">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="sidebar-logo">
+                <img src="static/images/logo.png" alt="Logo" class="sidebar-logo">
             </div>
             <h3 class="sidebar-title">PDV Control</h3>
             
-            <a href="/admin" class="nav-btn vendas {% if active_page == 'admin' %}active{% endif %}">Histórico de Vendas</a>
-            <a href="/cliente" class="nav-btn cliente {% if active_page == 'cliente' %}active{% endif %}">Cadastrar Cliente</a>
-            <a href="/produto" class="nav-btn produto {% if active_page == 'produto' %}active{% endif %}">Cadastrar Produto</a>
-            <a href="/caixa" class="nav-btn caixa {% if active_page == 'caixa' %}active{% endif %}">Frente de Caixa</a>
+            <a href="admin.html" class="nav-btn vendas">Histórico de Vendas</a>
+            <a href="cliente.html" class="nav-btn cliente">Cadastrar Cliente</a>
+            <a href="produto.html" class="nav-btn produto">Cadastrar Produto</a>
+            <a href="caixa.html" class="nav-btn caixa active">Frente de Caixa</a>
             
-            <a href="/logout" class="nav-btn logout">Sair</a>
+            <a href="index.html" class="nav-btn logout">Sair</a>
         </nav>
         
         <main class="content">
             <h2>Terminal Frente de Caixa (PDV)</h2>
             
-            {% if error %}
-            <div style="background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: 600;">
-                ⚠️ {{ error }}
+            <div id="mensagem-status" style="display: none; background-color: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: 600;">
+                ⚠️ Erro padrão.
             </div>
-            {% endif %}
 
             <div class="table-container">
-                <form action="/registrar_venda" method="POST" id="form-caixa">
+                <form id="form-caixa">
                     
                     <div class="payment-group">
                         <div class="payment-field">
                             <label style="font-weight: 600; display: block; margin-bottom: 8px; font-size:14px; color: var(--text-dark);">Vincular Cliente à Nota:</label>
-                            <select name="nome_cliente" style="padding: 12px; width: 100%; border-radius: 8px; border: 1px solid var(--border-color); background: #f8fafc; font-size:14px; color:var(--text-dark);">
+                            <select name="nome_cliente" id="select-cliente" style="padding: 12px; width: 100%; border-radius: 8px; border: 1px solid var(--border-color); background: #f8fafc; font-size:14px; color:var(--text-dark);">
                                 <option value="CONSUMIDOR NAO IDENTIFICADO">-- CONSUMIDOR NÃO IDENTIFICADO --</option>
-                                {% for c in clientes %}
-                                <option value="{{ c[0] }}">{{ c[0] }}</option>
-                                {% endfor %}
-                            </select>
+                                </select>
                         </div>
 
                         <div class="payment-field">
                             <label style="font-weight: 600; display: block; margin-bottom: 8px; font-size:14px; color: var(--text-dark);">Forma de Pagamento:</label>
-                            <select name="forma_pagamento" required style="padding: 12px; width: 100%; border-radius: 8px; border: 1px solid var(--border-color); background: #f8fafc; font-size:14px; color:var(--text-dark); font-weight: 600;">
+                            <select name="forma_pagamento" id="forma-pagamento" required style="padding: 12px; width: 100%; border-radius: 8px; border: 1px solid var(--border-color); background: #f8fafc; font-size:14px; color:var(--text-dark); font-weight: 600;">
                                 <option value="Dinheiro">💵 Dinheiro</option>
                                 <option value="Pix" selected>⚡ Pix</option>
                                 <option value="Credito">💳 Cartão de Crédito</option>
@@ -109,16 +104,13 @@
                                         
                                         <select name="produtos[]" class="prod-select" onchange="atualizarItem(this)" required style="padding:10px; flex:1; border-radius:6px; border:1px solid var(--border-color); background:#fff;">
                                             <option value="" data-id="" data-preco="0.00" data-estoque="0" data-cor-primaria="" data-cor-secundaria="">-- Selecione o item --</option>
-                                            {% for p in produtos %}
-                                            <option value="{{ p[1] }}" data-id="{{ p[0] }}" data-preco="{{ p[2] }}" data-estoque="{{ p[3] }}" data-cor-primaria="{{ p[4] if p[4] else '' }}" data-cor-secundaria="{{ p[5] if p[5] else '' }}">{{ p[1] }} (Estoque: {{ p[3] }})</option>
-                                            {% endfor %}
-                                        </select>
+                                            </select>
                                     </div>
                                     <div class="color-container-td"></div>
                                 </td>
                                 <td>
                                     <input type="number" name="qtd[]" class="prod-qtd" value="1" min="1" oninput="validarLimiteDisponivel(this)" onchange="calcularTotalGeral()" required style="padding:10px; width:110px; border-radius:6px; border:1px solid var(--border-color);">
-                                    <small class="estoque-aviso" style="display:block; color:var(--text-light); font-size:11px; margin-top:4px; font-weight:500;"></small>
+                                    <small class="estoque-aviso" style="display:block; color:var(--text-light); font-size:11px; margin-top:4px; font-weight:500を確認。"></small>
                                 </td>
                                 <td><input type="text" name="preco[]" class="prod-preco" readonly style="padding:10px; width:130px; border-radius:6px; border:1px solid var(--border-color); background:#f1f5f9; font-weight:700; color:var(--text-dark);"></td>
                                 <td style="text-align: center; padding-top: 14px;"><button type="button" onclick="removerLinha(this)" style="background:rgba(239, 68, 68, 0.1); color:var(--danger); border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">✕</button></td>
@@ -139,6 +131,53 @@
     </div>
 
     <script>
+        // --- BANCO DE DADOS DE SIMULAÇÃO (Será substituído pela chamada do Sheets mais para frente) ---
+        const mockClientes = [
+            ["João Silva"],
+            ["Maria Oliveira"],
+            ["Carlos Santos"]
+        ];
+
+        const mockProdutos = [
+            ["101", "Camiseta Classic Preta", "59.90", "15", "#000000", "#FFFFFF"],
+            ["102", "Moletom Street Azul", "129.00", "7", "#0000FF", "#CCCCCC"],
+            ["103", "Boné Sport Aba Curva", "45.00", "22", "#FF0000", ""]
+        ];
+
+        // --- INICIALIZAÇÃO DA PÁGINA ---
+        document.addEventListener("DOMContentLoaded", function() {
+            carregarClientes();
+            carregarProdutosNoSelect(document.querySelector('.prod-select'));
+        });
+
+        function carregarClientes() {
+            const selectCliente = document.getElementById('select-cliente');
+            mockClientes.forEach(cliente => {
+                const opt = document.createElement('option');
+                opt.value = cliente[0];
+                opt.textContent = cliente[0];
+                selectCliente.appendChild(opt);
+            });
+        }
+
+        function carregarProdutosNoSelect(selectElement) {
+            // Mantém apenas a primeira opção padrão
+            selectElement.innerHTML = '<option value="" data-id="" data-preco="0.00" data-estoque="0" data-cor-primaria="" data-cor-secundaria="">-- Selecione o item --</option>';
+            
+            mockProdutos.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p[1];
+                opt.setAttribute('data-id', p[0]);
+                opt.setAttribute('data-preco', p[2]);
+                opt.setAttribute('data-estoque', p[3]);
+                opt.setAttribute('data-cor-primaria', p[4] || '');
+                opt.setAttribute('data-cor-secundaria', p[5] || '');
+                opt.textContent = `${p[1]} (Estoque: ${p[3]})`;
+                selectElement.appendChild(opt);
+            });
+        }
+
+        // --- SISTEMA INTERNO DO PDV ---
         function buscarPorCodigo(inputCod) {
             var codigoDigitado = inputCod.value.trim();
             var row = inputCod.closest('.item-row');
@@ -237,7 +276,12 @@
             var novaLinha = primeiraLinha.cloneNode(true);
             
             novaLinha.querySelector('.prod-cod').value = "";
-            novaLinha.querySelector('.prod-select').selectedIndex = 0;
+            
+            // Recarrega as opções no novo select para garantir a integridade dos dados copiados
+            var novoSelect = novaLinha.querySelector('.prod-select');
+            carregarProdutosNoSelect(novoSelect);
+            novoSelect.selectedIndex = 0;
+            
             novaLinha.querySelector('.prod-preco').value = "";
             
             var inputQtd = novaLinha.querySelector('.prod-qtd');
@@ -270,6 +314,19 @@
             });
             document.getElementById('total-geral').innerText = "R$ " + total.toFixed(2);
         }
+
+        // Intercepta o envio do formulário (Para enviar ao Apps Script futuramente)
+        document.getElementById('form-caixa').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const cliente = document.getElementById('select-cliente').value;
+            const pagamento = document.getElementById('forma-pagamento').value;
+            const total = document.getElementById('total-geral').textContent;
+
+            alert(`Venda registrada com Sucesso! (Simulação)\nCliente: ${cliente}\nForma: ${pagamento}\nTotal: ${total}`);
+            
+            // Aqui faremos o fetch post enviando os itens para a planilha depois!
+        });
     </script>
 </body>
 </html>
