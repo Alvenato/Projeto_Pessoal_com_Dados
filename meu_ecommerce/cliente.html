@@ -3,33 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.1">
+    <link rel="stylesheet" href="static/css/style.css">
     <title>Cadastro de Cliente</title>
 </head>
 <body>
     <div class="wrapper">
         <nav class="sidebar">
             <div class="sidebar-logo-container">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" class="sidebar-logo" alt="Logo Menu">
+                <img src="static/images/logo.png" class="sidebar-logo" alt="Logo Menu">
             </div>
             <h3 class="sidebar-title">PDV Control</h3>
             
-            <a href="/admin" class="nav-btn vendas {% if active_page == 'admin' %}active{% endif %}">Histórico de Vendas</a>
-            <a href="/cliente" class="nav-btn cliente {% if active_page == 'cliente' %}active{% endif %}">Cadastrar Cliente</a>
-            <a href="/produto" class="nav-btn produto {% if active_page == 'produto' %}active{% endif %}">Cadastrar Produto</a>
-            <a href="/caixa" class="nav-btn caixa {% if active_page == 'caixa' %}active{% endif %}">Frente de Caixa</a>
+            <a href="admin.html" class="nav-btn vendas">Histórico de Vendas</a>
+            <a href="cliente.html" class="nav-btn cliente active">Cadastrar Cliente</a>
+            <a href="produto.html" class="nav-btn produto">Cadastrar Produto</a>
+            <a href="caixa.html" class="nav-btn caixa">Frente de Caixa</a>
             
-            <a href="/logout" class="nav-btn logout">Sair</a>
+            <a href="index.html" class="nav-btn logout">Sair</a>
         </nav>
         
         <main class="content">
             <h2>Cadastro Detalhado de Cliente</h2>
             
-            <form action="/add_cliente" method="POST" class="grid-form">
-                <input type="text" name="nome" placeholder="Nome Completo" required>
-                <input type="email" name="email" placeholder="E-mail Principal">
-                <input type="text" name="telefone" placeholder="Telefone Fixo">
-                <input type="text" name="whatsapp" placeholder="WhatsApp / Celular">
+            <form id="form-cliente" class="grid-form">
+                <input type="text" id="nome" name="nome" placeholder="Nome Completo" required>
+                <input type="email" id="email" name="email" placeholder="E-mail Principal">
+                <input type="text" id="telefone" name="telefone" placeholder="Telefone Fixo">
+                <input type="text" id="whatsapp" name="whatsapp" placeholder="WhatsApp / Celular">
                 
                 <input type="text" id="cep" name="cep" placeholder="CEP" onblur="pesquisacep(this.value)" required>
                 <input type="text" id="logradouro" name="logradouro" placeholder="Logradouro">
@@ -39,8 +39,8 @@
                 <input type="text" id="cidade" name="cidade" placeholder="Cidade">
                 <input type="text" id="uf" name="uf" placeholder="UF">
                 
-                <input type="date" name="data_nasc">
-                <select name="genero">
+                <input type="date" id="data_nasc" name="data_nasc">
+                <select id="genero" name="genero">
                     <option value="" disabled selected style="display:none;">Selecione o Gênero</option>
                     <option value="M">Masculino</option>
                     <option value="F">Feminino</option>
@@ -61,22 +61,8 @@
                                 <th>Cidade/UF</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {% if clientes %}
-                                {% for cliente in clientes %}
-                                <tr>
-                                    <td>{{ cliente.nome }}</td>
-                                    <td>{{ cliente.email or '-' }}</td>
-                                    <td>{{ cliente.whatsapp or cliente.telefone or '-' }}</td>
-                                    <td>{{ cliente.cidade or '-' }}/{{ cliente.uf or '-' }}</td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr>
-                                    <td colspan="4" style="padding: 20px; text-align: center; color: var(--text-light); font-style: italic;">Nenhum cliente cadastrado até o momento.</td>
-                                </tr>
-                            {% endif %}
-                        </tbody>
+                        <tbody id="lista-clientes">
+                            </tbody>
                     </table>
                 </div>
             </div>
@@ -84,14 +70,83 @@
     </div>
 
     <script>
+        // --- BANCO DE DADOS DE SIMULAÇÃO ---
+        const mockClientes = [
+            { nome: "João Silva", email: "joao@email.com", whatsapp: "(61) 99999-1111", telefone: "", cidade: "Brasília", uf: "DF" },
+            { nome: "Maria Oliveira", email: "maria@email.com", whatsapp: "(61) 98888-2222", telefone: "", cidade: "Valparaíso de Goiás", uf: "GO" },
+            { nome: "Carlos Santos", email: "", whatsapp: "", telefone: "(61) 3333-4444", cidade: "Gama", uf: "DF" }
+        ];
+
+        // --- INICIALIZAÇÃO DA TELA ---
+        document.addEventListener("DOMContentLoaded", function() {
+            renderizarTabela();
+        });
+
+        // Função responsável por atualizar a tabela na tela
+        function renderizarTabela() {
+            const tbody = document.getElementById('lista-clientes');
+            tbody.innerHTML = ""; // Limpa a tabela
+
+            if (mockClientes.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="padding: 20px; text-align: center; color: var(--text-light); font-style: italic;">Nenhum cliente cadastrado até o momento.</td>
+                    </tr>`;
+                return;
+            }
+
+            mockClientes.forEach(cliente => {
+                const tr = document.createElement('tr');
+                
+                // Define o contato preferencial (WhatsApp, se não tiver vai Telefone, se não '-' )
+                const contato = cliente.whatsapp || cliente.telefone || '-';
+                const localidade = (cliente.cidade || cliente.uf) ? `${cliente.cidade || '-'}/${cliente.uf || '-'}` : '-';
+
+                tr.innerHTML = `
+                    <td>${cliente.nome}</td>
+                    <td>${cliente.email || '-'}</td>
+                    <td>${contato}</td>
+                    <td>${localidade}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- INTERCEPTAR FORMULÁRIO E SIMULAR CADASTRO ---
+        document.getElementById('form-cliente').addEventListener('submit', function(event) {
+            event.preventDefault(); // Impede o recarregamento da página
+
+            // Captura os dados digitados
+            const novoCliente = {
+                nome: document.getElementById('nome').value,
+                email: document.getElementById('email').value,
+                telefone: document.getElementById('telefone').value,
+                whatsapp: document.getElementById('whatsapp').value,
+                cidade: document.getElementById('cidade').value,
+                uf: document.getElementById('uf').value
+            };
+
+            // Adiciona no nosso banco de dados fake e atualiza a interface
+            mockClientes.push(novoCliente);
+            renderizarTabela();
+
+            // Limpa os campos do formulário para o próximo cadastro
+            document.getElementById('form-cliente').reset();
+            alert("Cliente cadastrado com sucesso! (Simulado localmente)");
+        });
+
+        // --- SISTEMA VIA CEP (Mantido original) ---
         function meu_callback(conteudo) {
             if (!("erro" in conteudo)) {
                 document.getElementById('logradouro').value=(conteudo.logradouro);
                 document.getElementById('bairro').value=(conteudo.bairro);
                 document.getElementById('cidade').value=(conteudo.localidade);
                 document.getElementById('uf').value=(conteudo.uf);
+            } else {
+                alert("CEP não encontrado.");
             }
         }
+        
         function pesquisacep(valor) {
             var cep = valor.replace(/\D/g, '');
             if (cep != "") {
@@ -100,6 +155,8 @@
                     var script = document.createElement('script');
                     script.src = 'https://viacep.com.br/ws/'+ cep + '/json/?callback=meu_callback';
                     document.body.appendChild(script);
+                } else {
+                    alert("Formato de CEP inválido.");
                 }
             }
         }
