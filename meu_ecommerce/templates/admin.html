@@ -18,10 +18,11 @@
             </div>
             <h3 class="sidebar-title">PDV Control</h3>
             
-            <a href="/admin" class="nav-btn vendas active">Histórico de Vendas</a>
-            <a href="/cliente" class="nav-btn cliente">Cadastro de Cliente</a>
-            <a href="/produto" class="nav-btn produto">Cadastrar Produto</a>
-            <a href="/caixa" class="nav-btn caixa">Frente de Caixa</a>
+            <a href="/admin" class="nav-btn vendas {% if active_page == 'admin' %}active{% endif %}">Histórico de Vendas</a>
+            <a href="/cliente" class="nav-btn cliente {% if active_page == 'cliente' %}active{% endif %}">Cadastro de Cliente</a>
+            <a href="/produto" class="nav-btn produto {% if active_page == 'produto' %}active{% endif %}">Cadastrar Produto</a>
+            <a href="/caixa" class="nav-btn caixa {% if active_page == 'caixa' %}active{% endif %}">Frente de Caixa</a>
+            <a href="/consultar_chave" class="nav-btn vendas {% if active_page == 'consultar_chave' %}active{% endif %}">Consultar Chave</a>
             
             <a href="/logout" class="nav-btn logout">Sair</a>
         </nav>
@@ -74,7 +75,7 @@
                             <th>Cliente</th>
                             <th>Data</th>
                             <th>Chave NFC-e</th>
-                            <th>Valor</th>
+                            <th>Pagamento</th> <th>Valor</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -85,7 +86,7 @@
                             <td>{{ v['cliente'] }}</td>
                             <td>{{ v['data'] }}</td>
                             <td style="font-family: monospace; font-size: 12px;">{{ v['chave_nfce'] }}</td>
-                            <td>R$ {{ "%.2f"|format(v['valor']|float) }}</td>
+                            <td>{{ v['forma_pagamento'] or 'N/A' }}</td> <td>R$ {{ "%.2f"|format(v['valor']|float) }}</td>
                             <td>
                                 <div class="actions-cell">
                                     <a href="/emitir_cupom/{{ v['id'] }}" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; text-decoration: none; font-size: 13px; inline-size: max-content; display: inline-block;">Emitir Cupom</a>

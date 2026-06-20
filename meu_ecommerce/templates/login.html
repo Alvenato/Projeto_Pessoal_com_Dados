@@ -11,6 +11,9 @@
         <img src="{{ url_for('static', filename='images/logo.png') }}" class="logo-center" alt="Logo Autenticação" onerror="this.style.display='none'">
         <form action="/login" method="POST">
             <h2>Acesso ao Sistema</h2>
+            {% if error %}
+            <p class="error-msg">{{ error }}</p>
+            {% endif %}
             <input type="text" name="username" placeholder="Usuário" required>
             <input type="password" name="password" placeholder="Senha" required>
             <button type="submit" class="btn-block">Entrar</button>

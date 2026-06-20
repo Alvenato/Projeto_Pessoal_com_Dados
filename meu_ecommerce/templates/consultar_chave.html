@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.9">
+    <title>Consultar Chave NFC-e</title>
+    <style>
+        .filter-container { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+        .actions-cell { display: flex; gap: 8px; align-items: center; }
+
+        .chave-input-wrapper {
+            position: relative;
+            flex: 1;
+        }
+        .chave-input-wrapper input {
+            width: 100%;
+            padding: 11px 44px 11px 14px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+            box-sizing: border-box;
+            background: #fff;
+            color: #1e293b;
+            transition: border-color .2s;
+        }
+        .chave-input-wrapper input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,.08);
+        }
+        .chave-input-wrapper .clear-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            line-height: 1;
+            display: none;
+        }
+        .chave-input-wrapper input:not(:placeholder-shown) ~ .clear-btn { display: block; }
+
+        /* Card de resultado quando encontrado */
+        .resultado-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 28px 30px;
+            margin-top: 28px;
+        }
+        .resultado-card .label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+        .resultado-card .valor {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 18px;
+        }
+        .resultado-card .chave-display {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #2563eb;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 10px 14px;
+            word-break: break-all;
+            margin-bottom: 18px;
+        }
+        .resultado-card .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+        .resultado-card .badge-pagamento {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .resultado-card .acoes {
+            display: flex;
+            gap: 10px;
+            padding-top: 20px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        /* Estado vazio / não encontrado */
+        .estado-vazio {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        .estado-vazio .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            display: block;
+        }
+        .estado-vazio p { font-size: 15px; margin: 0; }
+        .estado-nao-encontrado {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            color: #991b1b;
+            font-weight: 600;
+            margin-top: 28px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        {% if logged_in %}
+        <nav class="sidebar">
+            <div class="sidebar-logo-container">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="sidebar-logo">
+            </div>
+            <h3 class="sidebar-title">PDV Control</h3>
+
+            <a href="/admin"           class="nav-btn vendas  {% if active_page == 'admin'   %}active{% endif %}">Histórico de Vendas</a>
+            <a href="/cliente"         class="nav-btn cliente {% if active_page == 'cliente' %}active{% endif %}">Cadastrar Cliente</a>
+            <a href="/produto"         class="nav-btn produto {% if active_page == 'produto' %}active{% endif %}">Cadastrar Produto</a>
+            <a href="/caixa"           class="nav-btn caixa   {% if active_page == 'caixa'   %}active{% endif %}">Frente de Caixa</a>
+            <a href="/consultar_chave" class="nav-btn vendas  {% if active_page == 'consultar_chave' %}active{% endif %}">Consultar Chave</a>
+
+            <a href="/logout" class="nav-btn logout">Sair</a>
+        </nav>
+        {% endif %}
+
+        <main class="content" style="{% if not logged_in %}margin-left: 0; max-width: 800px; margin: 0 auto; padding: 40px 20px;{% endif %}">
+        {% if not logged_in %}
+            <div style="text-align:center; margin-bottom: 30px;">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" style="max-height: 70px; object-fit: contain;" onerror="this.style.display='none'" alt="Logo">
+                <h2 style="margin-top: 12px; color: #1e293b;">Consulta de NFC-e</h2>
+            </div>
+        {% else %}
+            <h2>Consulta de Chave NFC-e</h2>
+        {% endif %}
+
+            <!-- Campo de busca -->
+            <div class="filter-container" style="background: white;">
+                <form method="GET" action="/consultar_chave" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 240px;">
+                        <label style="display: block; font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 6px;">
+                            Chave NFC-e ou nº do Cupom:
+                        </label>
+                        <div class="chave-input-wrapper">
+                            <input
+                                type="text"
+                                name="chave"
+                                placeholder="Digite a chave ou o número do cupom (#ID)"
+                                value="{{ chave_buscada or '' }}"
+                                autocomplete="off"
+                                autofocus
+                            >
+                            <button type="button" class="clear-btn" onclick="limparBusca()">✕</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-filter" style="padding: 11px 24px; height: 44px;">
+                        🔍 Consultar
+                    </button>
+                    <a href="/consultar_chave" class="btn-clear" style="padding: 11px 20px; text-decoration: none; height: 44px; display: inline-flex; align-items: center;">
+                        Limpar
+                    </a>
+                </form>
+            </div>
+
+            <!-- Resultado -->
+            {% if chave_buscada %}
+
+                {% if venda %}
+                <div class="resultado-card">
+                    <div class="label">Chave de Acesso NFC-e</div>
+                    <div class="chave-display">
+                        {% set ch = venda['chave_nfce'] or '' %}
+                        {% if ch|length >= 20 %}
+                            {{ ch[:4] }} {{ ch[4:8] }} {{ ch[8:12] }} {{ ch[12:16] }} {{ ch[16:20] }}
+                            {% if ch|length > 20 %}
+                                {{ ch[20:24] }} {{ ch[24:28] }} {{ ch[28:32] }} {{ ch[32:36] }} {{ ch[36:40] }} {{ ch[40:44] }}
+                            {% endif %}
+                        {% else %}
+                            {{ ch or 'N/A' }}
+                        {% endif %}
+                    </div>
+
+                    <div class="info-grid">
+                        <div>
+                            <div class="label">Nº do Cupom</div>
+                            <div class="valor">#{{ "%06d"|format(venda['id']) }}</div>
+                        </div>
+                        <div>
+                            <div class="label">Data de Emissão</div>
+                            <div class="valor">{{ venda['data'] }}</div>
+                        </div>
+                        <div>
+                            <div class="label">Valor Total</div>
+                            <div class="valor" style="color: #10b981; font-size: 17px;">
+                                R$ {{ "%.2f"|format(venda['valor']|float) }}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="label">Cliente</div>
+                            <div class="valor">{{ venda['cliente'] or 'CONSUMIDOR NÃO IDENTIFICADO' }}</div>
+                        </div>
+                        <div>
+                            <div class="label">Forma de Pagamento</div>
+                            <div class="valor">
+                                <span class="badge-pagamento">
+                                    {% if venda['forma_pagamento'] == 'Dinheiro' %}💵 Dinheiro
+                                    {% elif venda['forma_pagamento'] == 'Pix' %}⚡ Pix
+                                    {% elif venda['forma_pagamento'] == 'Credito' %}💳 Crédito
+                                    {% elif venda['forma_pagamento'] == 'Debito' %}💳 Débito
+                                    {% else %}{{ venda['forma_pagamento'] or 'N/A' }}{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="label">Itens na Nota</div>
+                            <div class="valor">{{ itens|length }} produto(s)</div>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de itens -->
+                    {% if itens %}
+                    <div class="label" style="margin-bottom: 10px;">Itens da Venda</div>
+                    <div class="table-container" style="margin-bottom: 0;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th style="text-align:center; width:80px;">Qtd.</th>
+                                    <th style="text-align:right; width:110px;">Preço Unit.</th>
+                                    <th style="text-align:right; width:110px;">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in itens %}
+                                <tr>
+                                    <td style="font-weight: 600;">{{ item['produto_nome'] }}</td>
+                                    <td style="text-align:center;">{{ item['quantidade'] }} un</td>
+                                    <td style="text-align:right;">R$ {{ "%.2f"|format(item['preco_unitario']|float) }}</td>
+                                    <td style="text-align:right; font-weight:700; color:#10b981;">
+                                        R$ {{ "%.2f"|format((item['quantidade']|float) * (item['preco_unitario']|float)) }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+
+                </div>
+
+                {% else %}
+                <div class="estado-nao-encontrado">
+                    ⚠️ Nenhuma venda encontrada para a chave ou ID informado: <strong>{{ chave_buscada }}</strong>
+                </div>
+                {% endif %}
+
+            {% else %}
+            <!-- Estado inicial (sem busca ainda) -->
+            <div class="estado-vazio">
+                <span class="icon">🔍</span>
+                <p>Digite a chave NFC-e ou o número do cupom para consultar uma venda.</p>
+            </div>
+            {% endif %}
+
+        </main>
+    </div>
+
+    <script>
+        function limparBusca() {
+            var input = document.querySelector('input[name="chave"]');
+            input.value = '';
+            input.focus();
+        }
+
+</script>
+</body>
+</html>

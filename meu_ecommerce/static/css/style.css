@@ -242,6 +242,17 @@ body.login-page {
     background: var(--primary-hover);
 }
 
+.error-msg {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    text-align: center;
+}
+
 /* --- Formulário em Grid Dinâmico --- */
 .grid-form {
     display: grid;

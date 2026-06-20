@@ -53,6 +53,7 @@
             <a href="/cliente" class="nav-btn cliente {% if active_page == 'cliente' %}active{% endif %}">Cadastrar Cliente</a>
             <a href="/produto" class="nav-btn produto {% if active_page == 'produto' %}active{% endif %}">Cadastrar Produto</a>
             <a href="/caixa" class="nav-btn caixa {% if active_page == 'caixa' %}active{% endif %}">Frente de Caixa</a>
+            <a href="/consultar_chave" class="nav-btn vendas {% if active_page == 'consultar_chave' %}active{% endif %}">Consultar Chave</a>
             
             <a href="/logout" class="nav-btn logout">Sair</a>
         </nav>
@@ -75,7 +76,7 @@
                             <select name="nome_cliente" style="padding: 12px; width: 100%; border-radius: 8px; border: 1px solid var(--border-color); background: #f8fafc; font-size:14px; color:var(--text-dark);">
                                 <option value="CONSUMIDOR NAO IDENTIFICADO">-- CONSUMIDOR NÃO IDENTIFICADO --</option>
                                 {% for c in clientes %}
-                                <option value="{{ c[0] }}">{{ c[0] }}</option>
+                                <option value="{{ c.nome }}">{{ c.nome }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -110,7 +111,7 @@
                                         <select name="produtos[]" class="prod-select" onchange="atualizarItem(this)" required style="padding:10px; flex:1; border-radius:6px; border:1px solid var(--border-color); background:#fff;">
                                             <option value="" data-id="" data-preco="0.00" data-estoque="0" data-cor-primaria="" data-cor-secundaria="">-- Selecione o item --</option>
                                             {% for p in produtos %}
-                                            <option value="{{ p[1] }}" data-id="{{ p[0] }}" data-preco="{{ p[2] }}" data-estoque="{{ p[3] }}" data-cor-primaria="{{ p[4] if p[4] else '' }}" data-cor-secundaria="{{ p[5] if p[5] else '' }}">{{ p[1] }} (Estoque: {{ p[3] }})</option>
+                                            <option value="{{ p.nome }}" data-id="{{ p.id }}" data-preco="{{ p.preco }}" data-estoque="{{ p.quantidade }}" data-cor-primaria="{{ p.cor_primaria if p.cor_primaria else '' }}" data-cor-secundaria="{{ p.cor_secundaria if p.cor_secundaria else '' }}">{{ p.nome }} (Estoque: {{ p.quantidade }})</option>
                                             {% endfor %}
                                         </select>
                                     </div>
@@ -120,7 +121,7 @@
                                     <input type="number" name="qtd[]" class="prod-qtd" value="1" min="1" oninput="validarLimiteDisponivel(this)" onchange="calcularTotalGeral()" required style="padding:10px; width:110px; border-radius:6px; border:1px solid var(--border-color);">
                                     <small class="estoque-aviso" style="display:block; color:var(--text-light); font-size:11px; margin-top:4px; font-weight:500;"></small>
                                 </td>
-                                <td><input type="text" name="preco[]" class="prod-preco" readonly style="padding:10px; width:130px; border-radius:6px; border:1px solid var(--border-color); background:#f1f5f9; font-weight:700; color:var(--text-dark);"></td>
+                                <td><input type="text" name="preco[]" class="prod-preco" value="0.00" readonly style="padding:10px; width:130px; border-radius:6px; border:1px solid var(--border-color); background:#f1f5f9; font-weight:700; color:var(--text-dark);"></td>
                                 <td style="text-align: center; padding-top: 14px;"><button type="button" onclick="removerLinha(this)" style="background:rgba(239, 68, 68, 0.1); color:var(--danger); border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:bold;">✕</button></td>
                             </tr>
                         </tbody>

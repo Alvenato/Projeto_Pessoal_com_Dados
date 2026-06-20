@@ -18,6 +18,7 @@
             <a href="/cliente" class="nav-btn cliente {% if active_page == 'cliente' %}active{% endif %}">Cadastrar Cliente</a>
             <a href="/produto" class="nav-btn produto {% if active_page == 'produto' %}active{% endif %}">Cadastrar Produto</a>
             <a href="/caixa" class="nav-btn caixa {% if active_page == 'caixa' %}active{% endif %}">Frente de Caixa</a>
+            <a href="/consultar_chave" class="nav-btn vendas {% if active_page == 'consultar_chave' %}active{% endif %}">Consultar Chave</a>
             
             <a href="/logout" class="nav-btn logout">Sair</a>
         </nav>
@@ -25,7 +26,7 @@
         <main class="content">
             <h2>Cadastro Detalhado de Cliente</h2>
             
-            <form action="/add_cliente" method="POST" class="grid-form">
+            <form action="/cliente" method="POST" class="grid-form">
                 <input type="text" name="nome" placeholder="Nome Completo" required>
                 <input type="email" name="email" placeholder="E-mail Principal">
                 <input type="text" name="telefone" placeholder="Telefone Fixo">
