@@ -345,7 +345,7 @@ from flask import Flask, render_template, request, redirect, url_for, session
 import datetime
 import os
 import random
-import gspread # Biblioteca para o Google Sheets
+import gspread
 
 app = Flask(__name__)
 app.secret_key = 'chave_secreta_padrao'
@@ -354,15 +354,15 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # --- CONFIGURAÇÃO DO GOOGLE SHEETS ---
 def get_spreadsheet():
-    # Carrega o arquivo JSON de credenciais que você baixa do Google Cloud
+    # Carrega o arquivo JSON de credenciais local (protegido pelo seu .gitignore)
     cred_path = os.path.join(BASE_DIR, "credentials.json")
     gc = gspread.service_account(filename=cred_path)
     
-    # Abre a planilha pelo nome exato dela no seu Google Drive
-    return gc.open("Nome_Da_Sua_Planilha")
+    # Abre a planilha pelo nome exato informado
+    return gc.open("banco_ecommerce")
 
 def init_sheets():
-    """Garante que as abas existam e tenham os cabeçalhos corretos"""
+    """Garante que as abas existam e tenham os cabeçalhos corretos no Sheets"""
     try:
         sh = get_spreadsheet()
         
@@ -377,20 +377,18 @@ def init_sheets():
             try:
                 sh.worksheet(nome_aba)
             except gspread.exceptions.WorksheetNotFound:
-                # Se a aba não existir, cria e adiciona a primeira linha (cabeçalho)
                 ws = sh.add_worksheet(title=nome_aba, rows="100", cols=str(len(colunas)))
                 ws.append_row(colunas)
                 
-                # Popula dados iniciais caso seja uma aba nova
                 if nome_aba == "clientes":
-                    ws.append_row(["1", "CONSUMIDOR NÃO IDENTIFICADO"])
+                    ws.append_row(["1", "CONSUMIDOR NÃO IDENTIFICADO", "", "", "", "", "", "", "", "", "", "", "", ""])
                 elif nome_aba == "produtos":
                     ws.append_row(["1", "Camiseta Preta Basica", "49.90", "20", "#000000", "#ffffff"])
                     ws.append_row(["2", "Bone Aba Curva Azul", "89.90", "5", "#0000ff", ""])
     except Exception as e:
-        print(f"Aviso ao inicializar planilhas: {e}. Certifique-se de que o arquivo 'credentials.json' existe.")
+        print(f"Aviso ao inicializar planilhas: {e}.")
 
-# --- ROTAS ---
+# --- ROTAS DE AUTENTICAÇÃO ---
 
 @app.route('/')
 def index():
@@ -401,9 +399,30 @@ def login():
     if request.method == 'POST':
         if request.form.get('username') == 'admin' and request.form.get('password') == 'admin':
             return redirect(url_for('alterar_senha'))
+        
         session['logged_in'] = True
         return redirect(url_for('admin'))
     return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('login'))
+
+@app.route('/alterar_senha', methods=['GET', 'POST'])
+def alterar_senha():
+    if request.method == 'POST':
+        nova_senha = request.form.get('nova_senha')
+        confirmar_senha = request.form.get('confirmar_senha')
+        
+        if nova_senha != confirmar_senha:
+            return render_template('alterar_senha.html', error="As senhas informadas não coincidem!")
+            
+        session['logged_in'] = True
+        return redirect(url_for('admin'))
+    return render_template('alterar_senha.html')
+
+# --- ROTA PAINEL ADMIN (HISTÓRICO E FILTROS) ---
 
 @app.route('/admin')
 def admin():
@@ -415,15 +434,13 @@ def admin():
     
     sh = get_spreadsheet()
     vendas_aba = sh.worksheet("vendas")
-    todas_vendas = vendas_aba.get_all_records() # Retorna uma lista de dicionários
+    todas_vendas = vendas_aba.get_all_records()
 
-    # Filtragem dos dados usando Python puro (substituindo o SQL)
     vendas_filtradas = []
     for v in todas_vendas:
-        # Exemplo de data no Sheets: "2026-06-20 15:30:00"
         data_str = str(v.get('data', ''))
         try:
-            partes_data = data_str.split(" ")[0].split("-") # ['2026', '06', '20']
+            partes_data = data_str.split(" ")[0].split("-")
             ano_v, mes_v, dia_v = partes_data[0], partes_data[1], partes_data[2]
         except:
             ano_v, mes_v, dia_v = "", "", ""
@@ -432,11 +449,9 @@ def admin():
         if mes and mes.zfill(2) != mes_v: continue
         if annot and annot != ano_v: continue
         
-        # Garante a tipagem correta para o HTML fazer as somas
         v['valor'] = float(v['valor']) if v['valor'] else 0.0
         vendas_filtradas.append(v)
 
-    # Inverte a lista para mostrar as mais recentes primeiro (ORDER BY id DESC)
     vendas_filtradas.reverse()
 
     total_vendas = len(vendas_filtradas)
@@ -455,6 +470,8 @@ def admin():
                            faturamento_credito=faturamento_credito,
                            faturamento_debito=faturamento_debito,
                            active_page='admin')
+
+# --- ROTAS DO CAIXA E REGISTRO DE VENDAS ---
 
 @app.route('/caixa')
 def caixa():
@@ -486,7 +503,6 @@ def registrar_venda():
     produtos_aba = sh.worksheet("produtos")
     
     try:
-        # Calcular valor total consolidado
         valor_total = 0.0
         for i in range(len(lista_produtos)):
             if not lista_produtos[i]: continue
@@ -495,13 +511,12 @@ def registrar_venda():
         chave_nfce = "".join([str(random.randint(0, 9)) for _ in range(44)])
         data_venda = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        # Gerar ID Incremental para a Venda
-        proximo_venda_id = len(vendas_aba.get_all_values()) # Total de linhas vira o próximo ID numérico
+        # Gerar ID único sequencial baseado no maior ID existente
+        vendas_existentes = vendas_aba.get_all_records()
+        proximo_venda_id = max([int(v['id']) for v in vendas_existentes]) + 1 if vendas_existentes else 1
         
-        # 1. Salva a Venda Principal
         vendas_aba.append_row([proximo_venda_id, nome_cliente, valor_total, data_venda, chave_nfce, forma_pagamento])
         
-        # 2. Insere os itens individuais e atualiza a quantidade na aba de Produtos
         todos_produtos = produtos_aba.get_all_records()
         
         for i in range(len(lista_produtos)):
@@ -510,18 +525,16 @@ def registrar_venda():
             nome_prod = lista_produtos[i]
             qtd = int(lista_qtds[i])
             preco_unit = float(lista_precos[i])
-            proximo_item_id = len(itens_aba.get_all_values())
             
-            # Salva o item vendido
+            itens_existentes = itens_aba.get_all_records()
+            proximo_item_id = max([int(it['id']) for it in itens_existentes]) + 1 if itens_existentes else 1
+            
             itens_aba.append_row([proximo_item_id, proximo_venda_id, nome_prod, qtd, preco_unit])
             
-            # Atualiza o estoque procurando a linha do produto pelo nome
-            for idx, prod in enumerate(todos_produtos, start=2): # Linha 1 é o cabeçalho, dados começam na 2
+            for idx, prod in enumerate(todos_produtos, start=2):
                 if prod['nome'] == nome_prod:
-                    estoque_atual = int(prod['quantidade'])
-                    novo_estoque = estoque_atual - qtd
-                    # Na tabela de produtos, 'quantidade' é a 4ª coluna (coluna D)
-                    produtos_aba.update_cell(idx, 4, novo_estoque)
+                    novo_estoque = int(prod['quantidade']) - qtd
+                    produtos_aba.update_cell(idx, 4, novo_estoque) # Coluna D (Quantidade)
                     break
                     
     except Exception as e:
@@ -529,13 +542,46 @@ def registrar_venda():
         
     return redirect(url_for('admin'))
 
+@app.route('/remover_venda/<int:venda_id>', methods=['POST'])
+def remover_venda(venda_id):
+    if 'logged_in' not in session: return redirect(url_for('login'))
+    
+    sh = get_spreadsheet()
+    vendas_aba = sh.worksheet("vendas")
+    itens_aba = sh.worksheet("venda_itens")
+    
+    # 1. Remove da aba Vendas
+    vendas = vendas_aba.get_all_records()
+    for idx, v in enumerate(vendas, start=2):
+        if int(v['id']) == venda_id:
+            vendas_aba.delete_rows(idx)
+            break
+            
+    # 2. Remove os itens vinculados (de baixo para cima para não quebrar o índice dinâmico)
+    itens = itens_aba.get_all_records()
+    for idx, item in reversed(list(enumerate(itens, start=2))):
+        if int(item['venda_id']) == venda_id:
+            itens_aba.delete_rows(idx)
+            
+    return redirect(url_for('admin'))
+
+# --- ROTAS DE CLIENTES ---
+
+@app.route('/cliente')
+def cliente():
+    if 'logged_in' not in session: return redirect(url_for('login'))
+    sh = get_spreadsheet()
+    clientes = sh.worksheet("clientes").get_all_records()
+    return render_template('cliente.html', clientes=clientes, active_page='cliente')
+
 @app.route('/add_cliente', methods=['POST'])
 def add_cliente():
     if 'logged_in' not in session: return redirect(url_for('login'))
     
     sh = get_spreadsheet()
     clientes_aba = sh.worksheet("clientes")
-    proximo_id = len(clientes_aba.get_all_values())
+    clientes_existentes = clientes_aba.get_all_records()
+    proximo_id = max([int(c['id']) for c in clientes_existentes]) + 1 if clientes_existentes else 1
     
     dados_cliente = [
         proximo_id, request.form.get('nome'), request.form.get('email'), request.form.get('telefone'),
@@ -545,9 +591,93 @@ def add_cliente():
     ]
     
     clientes_aba.append_row(dados_cliente)
-    return redirect(url_for('caixa')) # Redireciona de volta para o caixa
+    return redirect(url_for('cliente'))
 
-# (As demais rotas como emitir_cupom seguem a mesma lógica de buscar com .get_all_records())
+# --- ROTAS DE PRODUTOS ---
+
+@app.route('/produto')
+def produto():
+    if 'logged_in' not in session: return redirect(url_for('login'))
+    sh = get_spreadsheet()
+    produtos = sh.worksheet("produtos").get_all_records()
+    return render_template('produto.html', produtos=produtos, active_page='produto')
+
+@app.route('/add_produto', methods=['POST'])
+def add_produto():
+    if 'logged_in' not in session: return redirect(url_for('login'))
+    
+    sh = get_spreadsheet()
+    produtos_aba = sh.worksheet("produtos")
+    produtos_existentes = produtos_aba.get_all_records()
+    proximo_id = max([int(p['id']) for p in produtos_existentes]) + 1 if produtos_existentes else 1
+    
+    dados_produto = [
+        proximo_id,
+        request.form.get('nome'),
+        float(request.form.get('preco')),
+        int(request.form.get('quantidade')),
+        request.form.get('cor_primaria'),
+        request.form.get('cor_secundaria')
+    ]
+    
+    produtos_aba.append_row(dados_produto)
+    return redirect(url_for('produto'))
+
+@app.route('/remover_produto', methods=['POST'])
+def remover_produto():
+    if 'logged_in' not in session: return redirect(url_for('login'))
+    
+    produto_id = int(request.form.get('produto_id'))
+    sh = get_spreadsheet()
+    produtos_aba = sh.worksheet("produtos")
+    produtos = produtos_aba.get_all_records()
+    
+    for idx, prod in enumerate(produtos, start=2):
+        if int(prod['id']) == produto_id:
+            produtos_aba.delete_rows(idx)
+            break
+            
+    return redirect(url_for('produto'))
+
+# --- ROTAS DE EMISSÃO DE CUPOM (VISÃO ADMIN E PÚBLICA) ---
+
+@app.route('/emitir_cupom/<int:venda_id>')
+def emitir_cupom(venda_id):
+    if 'logged_in' not in session: return redirect(url_for('login'))
+    
+    sh = get_spreadsheet()
+    vendas = sh.worksheet("vendas").get_all_records()
+    venda_dict = next((v for v in vendas if int(v['id']) == venda_id), None)
+    
+    if not venda_dict:
+        return "Venda não encontrada.", 404
+        
+    clientes = sh.worksheet("clientes").get_all_records()
+    cliente = next((c for c in clientes if c['nome'] == venda_dict['cliente']), None)
+    venda_dict['whatsapp'] = cliente['whatsapp'] if cliente else ""
+    
+    todas_linhas_itens = sh.worksheet("venda_itens").get_all_records()
+    itens_filtrados = [item for item in todas_linhas_itens if int(item['venda_id']) == venda_id]
+    
+    return render_template('modelo_nf.html', venda=venda_dict, itens=itens_filtrados, modo_publico=False)
+
+@app.route('/cupom/<chave_nfce>')
+def cupom_publico(chave_nfce):
+    sh = get_spreadsheet()
+    vendas = sh.worksheet("vendas").get_all_records()
+    venda_dict = next((v for v in vendas if str(v['chave_nfce']) == str(chave_nfce)), None)
+    
+    if not venda_dict:
+        return "Cupom não encontrado.", 404
+        
+    clientes = sh.worksheet("clientes").get_all_records()
+    cliente = next((c for c in clientes if c['nome'] == venda_dict['cliente']), None)
+    venda_dict['whatsapp'] = cliente['whatsapp'] if cliente else ""
+    
+    todas_linhas_itens = sh.worksheet("venda_itens").get_all_records()
+    itens_filtrados = [item for item in todas_linhas_itens if int(item['venda_id']) == int(venda_dict['id'])]
+    
+    return render_template('modelo_nf.html', venda=venda_dict, itens=itens_filtrados, modo_publico=True)
 
 if __name__ == '__main__':
     init_sheets()
