@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="static/css/style.css">
+    <title>Cadastro de Produtos</title>
+    <style>
+        /* Estilos para o botão de excluir na tabela */
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+        .btn-delete:hover {
+            background-color: #c82333;
+        }
+        .btn-block {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-block:hover { opacity: 0.9; }
+        
+        /* Alinhamento da tabela para o botão */
+        table th, table td {
+            text-align: left;
+            padding: 10px;
+            vertical-align: middle;
+        }
+        .text-center { text-align: center; }
+
+        /* Estilo para quando o produto estiver zerado no estoque */
+        .badge-esgotado {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        /* Estilização para o contêiner do Mapa de Cores */
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #fafafa;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color, #ccc);
+            border-radius: 8px;
+            height: 45px;
+            box-sizing: border-box;
+        }
+
+        /* Input de cor nativo customizado */
+        .input-color-map {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 30px;
+            height: 30px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+        .input-color-map::-webkit-color-swatch {
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 4px rgba(0,0,0,0.3);
+        }
+        .input-color-map::-moz-color-swatch {
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 4px rgba(0,0,0,0.3);
+        }
+
+        /* Estilo para desativar visualmente o seletor quando a checkbox estiver desmarcada */
+        .color-disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        /* Quadrados de pré-visualização de cor na tabela */
+        .color-badge {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            vertical-align: middle;
+        }
+        .color-container-td {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <nav class="sidebar">
+            <div class="sidebar-logo-container">
+                <img src="static/images/logo.png" class="sidebar-logo" alt="Logo Menu">
+            </div>
+            <h3 class="sidebar-title">PDV Control</h3>
+            
+            <a href="admin.html" class="nav-btn vendas">Histórico de Vendas</a>
+            <a href="cliente.html" class="nav-btn cliente">Cadastrar Cliente</a>
+            <a href="produto.html" class="nav-btn produto active">Cadastrar Produto</a>
+            <a href="caixa.html" class="nav-btn caixa">Frente de Caixa</a>
+            
+            <a href="index.html" class="nav-btn logout">Sair</a>
+        </nav>
+        
+        <main class="content">
+            <h2>Gerenciamento de Produtos</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1.8fr; gap: 35px;">
+                
+                <div>
+                    <div class="table-container">
+                        <h3 style="margin-top:0; margin-bottom: 20px; font-size:18px;">Entrada de Item</h3>
+                        <form id="formProduto" style="display: flex; flex-direction: column; gap: 15px;">
+                            
+                            <label style="font-weight: 600; font-size: 13px; color: var(--text-dark);">Nome Comercial:</label>
+                            <input type="text" id="nome" placeholder="Ex: Refrigerante Lata 350ml" required style="padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
+                            
+                            <label style="font-weight: 600; font-size: 13px; color: var(--text-dark);">Preço de Venda (R$):</label>
+                            <input type="number" step="0.01" id="preco" placeholder="0.00" required style="padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
+                            
+                            <label style="font-weight: 600; font-size: 13px; color: var(--text-dark);">Quantidade inicial:</label>
+                            <input type="number" id="quantidade" placeholder="Ex: 10" min="0" required style="padding: 12px; border: 1px solid var(--border-color); border-radius: 8px;">
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div style="display: flex; flex-direction: column; gap: 5px;">
+                                    <label style="font-weight: 600; font-size: 13px; color: var(--text-dark);">Cor Primária:</label>
+                                    <div class="color-picker-wrapper">
+                                        <input type="checkbox" id="check_primaria" title="Ativar cor primária">
+                                        <input type="color" id="picker_primaria" value="#3b82f6" class="input-color-map color-disabled">
+                                        <input type="hidden" id="cor_primaria_final" value="">
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; flex-direction: column; gap: 5px;">
+                                    <label style="font-weight: 600; font-size: 13px; color: var(--text-dark);">Cor Secundária:</label>
+                                    <div class="color-picker-wrapper">
+                                        <input type="checkbox" id="check_secundaria" title="Ativar cor secundária">
+                                        <input type="color" id="picker_secundaria" value="#ef4444" class="input-color-map color-disabled">
+                                        <input type="hidden" id="cor_secundaria_final" value="">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn-submit btn-block" style="margin-top: 10px;">Salvar no Estoque</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="table-container" style="max-height: 520px; overflow-y: auto;">
+                        <h3 style="margin-top:0; margin-bottom: 20px; font-size:18px;">Itens no Catálogo</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Cód. Interno</th>
+                                    <th>Nome do Produto</th>
+                                    <th>Preço de Tabela</th>
+                                    <th>Qtd. Estoque</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-produtos">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- BANCO DE DADOS DE SIMULAÇÃO (MOCK) ---
+        const mockProdutos = [
+            { id: 1, nome: "Refrigerante Lata 350ml", preco: 5.50, quantidade: 24, corPrimaria: "#3b82f6", corSecundaria: "#ef4444" },
+            { id: 2, nome: "Água Mineral Sem Gás 500ml", preco: 3.00, quantidade: 50, corPrimaria: "#06b6d4", corSecundaria: "" },
+            { id: 3, nome: "Salgado Assado Integral", preco: 8.50, quantidade: 0, corPrimaria: "", corSecundaria: "" }
+        ];
+
+        let proximoId = 4; // Incrementador de IDs para novos registros
+
+        // --- INICIALIZAÇÃO E RENDERIZAÇÃO DA TABELA ---
+        document.addEventListener("DOMContentLoaded", function() {
+            renderizarTabela();
+        });
+
+        function renderizarTabela() {
+            const tbody = document.getElementById('lista-produtos');
+            tbody.innerHTML = ""; // Limpa os registros anteriores
+
+            if (mockProdutos.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-light); padding: 20px 0;">Nenhum produto cadastrado até o momento.</td>
+                    </tr>`;
+                return;
+            }
+
+            mockProdutos.forEach(p => {
+                const tr = document.createElement('tr');
+                
+                // Formatação do ID com zeros à esquerda (#0001)
+                const codigoFormatado = `#${String(p.id).padStart(4, '0')}`;
+                
+                // Estruturação das tags de cores se elas existirem no objeto
+                let badgesCores = '';
+                if (p.corPrimaria || p.corSecundaria) {
+                    badgesCores = `<div class="color-container-td">`;
+                    if (p.corPrimaria) {
+                        badgesCores += `<span class="color-badge" style="background-color: ${p.corPrimaria};" title="Cor Primária: ${p.corPrimaria}"></span>`;
+                    }
+                    if (p.corSecundaria) {
+                        badgesCores += `<span class="color-badge" style="background-color: ${p.corSecundaria};" title="Cor Secundária: ${p.corSecundaria}"></span>`;
+                    }
+                    badgesCores += `</div>`;
+                }
+
+                // Badge dinâmico de quantidade esgotada
+                const estoqueHtml = p.quantidade > 0 ? `${p.quantidade} un` : `<span class="badge-esgotado">Esgotado</span>`;
+
+                tr.innerHTML = `
+                    <td><span style="color: var(--text-light); font-weight:500;">${codigoFormatado}</span></td>
+                    <td>
+                        <span style="font-weight:600; display: block;">${p.nome}</span>
+                        ${badgesCores}
+                    </td>
+                    <td style="font-weight: 700; color: var(--success);">R$ ${parseFloat(p.preco).toFixed(2)}</td>
+                    <td style="font-weight: 600;">${estoqueHtml}</td>
+                    <td class="text-center">
+                        <button class="btn-delete" onclick="removerProduto(${p.id})">Remover do Estoque</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- SISTEMA DE CADASTRO (INTERCEPTADOR) ---
+        document.getElementById('formProduto').addEventListener('submit', function(event) {
+            event.preventDefault(); // Impede o envio para rotas de servidor
+
+            // Coleta os valores finais com base no estado das checkboxes
+            const corPrimariaFinal = checkPrimaria.checked ? pickerPrimaria.value : "";
+            const corSecundariaFinal = checkSecundaria.checked ? pickerSecundaria.value : "";
+
+            const novoProduto = {
+                id: proximoId++,
+                nome: document.getElementById('nome').value.trim(),
+                preco: parseFloat(document.getElementById('preco').value),
+                quantidade: parseInt(document.getElementById('quantidade').value, 10),
+                corPrimaria: corPrimariaFinal,
+                corSecundaria: corSecundariaFinal
+            };
+
+            // Insere no nosso array mock e reconstrói a tabela
+            mockProdutos.push(novoProduto);
+            renderizarTabela();
+
+            // Reseta o formulário e os estados de cores
+            document.getElementById('formProduto').reset();
+            desativarPickers();
+        });
+
+        // --- SISTEMA DE REMOÇÃO LOCAL ---
+        function removerProduto(id) {
+            if (confirm('Tem certeza que deseja remover este produto do estoque?')) {
+                const index = mockProdutos.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    mockProdutos.splice(index, 1);
+                    renderizarTabela();
+                }
+            }
+        }
+
+        // --- LÓGICA DO SELETOR DE CORES DINÂMICO (Mantido de forma otimizada) ---
+        const checkPrimaria = document.getElementById('check_primaria');
+        const pickerPrimaria = document.getElementById('picker_primaria');
+        const hiddenPrimaria = document.getElementById('cor_primaria_final');
+
+        const checkSecundaria = document.getElementById('check_secundaria');
+        const pickerSecundaria = document.getElementById('picker_secundaria');
+        const hiddenSecundaria = document.getElementById('cor_secundaria_final');
+
+        function desativarPickers() {
+            pickerPrimaria.classList.add('color-disabled');
+            hiddenPrimaria.value = "";
+            pickerSecundaria.classList.add('color-disabled');
+            hiddenSecundaria.value = "";
+        }
+
+        checkPrimaria.addEventListener('change', function() {
+            if(this.checked) {
+                pickerPrimaria.classList.remove('color-disabled');
+                hiddenPrimaria.value = pickerPrimaria.value;
+            } else {
+                pickerPrimaria.classList.add('color-disabled');
+                hiddenPrimaria.value = "";
+            }
+        });
+
+        pickerPrimaria.addEventListener('input', function() {
+            if(checkPrimaria.checked) hiddenPrimaria.value = this.value;
+        });
+
+        checkSecundaria.addEventListener('change', function() {
+            if(this.checked) {
+                pickerSecundaria.classList.remove('color-disabled');
+                hiddenSecundaria.value = pickerSecundaria.value;
+            } else {
+                pickerSecundaria.classList.add('color-disabled');
+                hiddenSecundaria.value = "";
+            }
+        });
+
+        pickerSecundaria.addEventListener('input', function() {
+            if(checkSecundaria.checked) hiddenSecundaria.value = this.value;
+        });
+    </script>
+</body>
+</html>

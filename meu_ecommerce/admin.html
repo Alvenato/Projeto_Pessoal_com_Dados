@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="static/css/style.css">
+    <title>Painel - Vendas</title>
+    <style>
+        .filter-container { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+        .actions-cell { display: flex; gap: 8px; align-items: center; }
+        .btn-delete {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        .btn-delete:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <nav class="sidebar">
+            <div class="sidebar-logo-container">
+                <img src="static/images/logo.png" alt="Logo" class="sidebar-logo" onerror="this.style.display='none'">
+            </div>
+            <h3 class="sidebar-title">PDV Control</h3>
+            
+            <a href="admin.html" class="nav-btn vendas active">Histórico de Vendas</a>
+            <a href="cliente.html" class="nav-btn cliente">Cadastro de Cliente</a>
+            <a href="produto.html" class="nav-btn produto">Cadastrar Produto</a>
+            <a href="caixa.html" class="nav-btn caixa">Frente de Caixa</a>
+            
+            <a href="index.html" class="nav-btn logout">Sair</a>
+        </nav>
+        
+        <main class="content">
+            <h2>Visão Geral do Negócio</h2>
+            
+            <div class="dashboard-grid">
+                <div class="card-metric"><h4>Total Vendas</h4><p id="total-vendas">0</p></div>
+                <div class="card-metric"><h4>Faturamento</h4><p id="faturamento-total" style="color: #10b981;">R$ 0.00</p></div>
+                <div class="card-metric"><h4>Dinheiro</h4><p id="faturamento-dinheiro">R$ 0.00</p></div>
+                <div class="card-metric"><h4>PIX</h4><p id="faturamento-pix">R$ 0.00</p></div>
+                <div class="card-metric"><h4>Crédito</h4><p id="faturamento-credito">R$ 0.00</p></div>
+                <div class="card-metric"><h4>Débito</h4><p id="faturamento-debito">R$ 0.00</p></div>
+            </div>
+
+            <div class="filter-container" style="background: white;">
+                <form id="filterForm" class="filter-form" style="display:flex; gap: 10px; align-items: flex-end;">
+                    <div class="filter-group">
+                        <label>Dia:</label>
+                        <select name="dia" id="filter-dia" class="filter-input">
+                            <option value="">--</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Mês:</label>
+                        <select name="mes" id="filter-mes" class="filter-input">
+                            <option value="">--</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Ano:</label>
+                        <select name="ano" id="filter-ano" class="filter-input">
+                            <option value="">----</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-filter" style="padding: 10px 20px; cursor: pointer;">Filtrar</button>
+                    <button type="button" id="btnClear" class="btn-clear" style="padding: 10px 20px; text-decoration: none; cursor: pointer; border: 1px solid #ccc; background: #fff; border-radius: 6px;">Limpar</button>
+                </form>
+            </div>
+
+            <h2>Histórico Geral de Vendas</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Data</th>
+                            <th>Chave NFC-e</th>
+                            <th>Valor</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vendas-table-body">
+                        </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- BANCO DE DADOS LOCAL DE HISTÓRICO (MOCK) ---
+        const mockVendas = [
+            { id: 1024, cliente: "Carlos Silva", data: "15/05/2026", chave_nfce: "35260510521453000194650010001245781254789632", valor: 154.90, metodo: "pix" },
+            { id: 1025, cliente: "Mariana Costa", data: "18/06/2026", chave_nfce: "35260610521453000194650010001245781254789654", valor: 45.00, metodo: "dinheiro" },
+            { id: 1026, cliente: "Consumidor Não Identificado", data: "19/06/2026", chave_nfce: "35260610521453000194650010001245781254789711", valor: 320.00, metodo: "credito" },
+            { id: 1027, cliente: "Roberto Souza", data: "20/06/2026", chave_nfce: "35260610521453000194650010001245781254789899", valor: 89.99, metodo: "debito" },
+            { id: 1028, cliente: "Ana Beatriz", data: "20/06/2026", chave_nfce: "35260610521453000194650010001245781254790123", valor: 12.50, metodo: "pix" }
+        ];
+
+        // --- INICIALIZAÇÃO DO COMPONENTE ---
+        document.addEventListener("DOMContentLoaded", function() {
+            carregarOpcoesFiltros();
+            processarDados(mockVendas);
+
+            // Interceptador de Submissão de Filtro
+            document.getElementById('filterForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                executarFiltro();
+            });
+
+            // Ação do Botão Limpar Filtros
+            document.getElementById('btnClear').addEventListener('click', function() {
+                document.getElementById('filterForm').reset();
+                processarDados(mockVendas);
+            });
+        });
+
+        // --- CONSTRUTOR DINÂMICO DOS SELECTS ---
+        function carregarOpcoesFiltros() {
+            const selectDia = document.getElementById('filter-dia');
+            const selectMes = document.getElementById('filter-mes');
+            const selectAno = document.getElementById('filter-ano');
+
+            // Gerar dias (01 a 31)
+            for (let d = 1; d <= 31; d++) {
+                let valorFormatado = String(d).padStart(2, '0');
+                selectDia.options[selectDia.options.length] = new Option(valorFormatado, valorFormatado);
+            }
+
+            // Gerar meses (01 a 12)
+            for (let m = 1; m <= 12; m++) {
+                let valorFormatado = String(m).padStart(2, '0');
+                selectMes.options[selectMes.options.length] = new Option(valorFormatado, valorFormatado);
+            }
+
+            // Gerar anos de escopo (2024 a 2030)
+            for (let y = 2024; y <= 2030; y++) {
+                selectAno.options[selectAno.options.length] = new Option(y, y);
+            }
+        }
+
+        // --- PROCESSAMENTO PRINCIPAL (TABELA + MÉTRICAS) ---
+        function processarDados(vendasParaExibir) {
+            renderizarTabela(vendasParaExibir);
+            calcularMetricas(vendasParaExibir);
+        }
+
+        function renderizarTabela(lista) {
+            const tbody = document.getElementById('vendas-table-body');
+            tbody.innerHTML = "";
+
+            if (lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-light); padding: 20px 0;">Nenhuma venda localizada para este período.</td></tr>`;
+                return;
+            }
+
+            lista.forEach(v => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>#${v.id}</td>
+                    <td>${v.cliente}</td>
+                    <td>${v.data}</td>
+                    <td style="font-family: monospace; font-size: 12px; letter-spacing: 0.5px;">${v.chave_nfce}</td>
+                    <td style="font-weight: 600;">R$ ${v.valor.toFixed(2)}</td>
+                    <td>
+                        <div class="actions-cell">
+                            <button onclick="emitirCupom(${v.id})" style="background: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">Emitir Cupom</button>
+                            <button onclick="removerVenda(${v.id})" class="btn-delete">Excluir</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function calcularMetricas(lista) {
+            let totalVendas = lista.length;
+            let faturamento = 0;
+            let dinheiro = 0;
+            let pix = 0;
+            let credito = 0;
+            let debito = 0;
+
+            lista.forEach(v => {
+                faturamento += v.valor;
+                if (v.metodo === 'dinheiro') dinheiro += v.valor;
+                if (v.metodo === 'pix') pix += v.valor;
+                if (v.metodo === 'credito') credito += v.valor;
+                if (v.metodo === 'debito') debito += v.valor;
+            });
+
+            document.getElementById('total-vendas').textContent = totalVendas;
+            document.getElementById('faturamento-total').textContent = `R$ ${faturamento.toFixed(2)}`;
+            document.getElementById('faturamento-dinheiro').textContent = `R$ ${dinheiro.toFixed(2)}`;
+            document.getElementById('faturamento-pix').textContent = `R$ ${pix.toFixed(2)}`;
+            document.getElementById('faturamento-credito').textContent = `R$ ${credito.toFixed(2)}`;
+            document.getElementById('faturamento-debito').textContent = `R$ ${debito.toFixed(2)}`;
+        }
+
+        // --- LÓGICA DE FILTRAGEM LOCAL ---
+        function executarFiltro() {
+            const filtroDia = document.getElementById('filter-dia').value;
+            const filtroMes = document.getElementById('filter-mes').value;
+            const filtroAno = document.getElementById('filter-ano').value;
+
+            const resultado = mockVendas.filter(v => {
+                // Estrutura do mock: "DD/MM/YYYY" -> split quebra nas barras
+                const partesData = v.data.split('/');
+                const diaVenda = partesData[0];
+                const mesVenda = partesData[1];
+                const anoVenda = partesData[2];
+
+                const condicaoDia = filtroDia === "" || diaVenda === filtroDia;
+                const condicaoMes = filtroMes === "" || mesVenda === filtroMes;
+                const condicaoAno = filtroAno === "" || anoVenda === filtroAno;
+
+                return condicaoDia && condicaoMes && condicaoAno;
+            });
+
+            processarDados(resultado);
+        }
+
+        // --- SISTEMA DE REMOÇÃO LOCAL ---
+        function removerVenda(id) {
+            if (confirm('Tem certeza que deseja apagar o registro desta venda? Esta ação não pode ser desfeita.')) {
+                const idx = mockVendas.findIndex(v => v.id === id);
+                if (idx !== -1) {
+                    mockVendas.splice(idx, 1);
+                    // Atualiza a visualização baseando-se no filtro ativo atual
+                    executarFiltro();
+                }
+            }
+        }
+
+        // --- EMISSÃO SIMULADA DE CUPOM ---
+        function emitirCupom(id) {
+            alert(`Impressão iniciada! Cupom fiscal referente à venda #${id} enviado para o gerenciador do sistema.`);
+        }
+    </script>
+</body>
+</html>
