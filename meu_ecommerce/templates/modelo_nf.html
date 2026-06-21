@@ -199,7 +199,7 @@
             }
 
             let dominioAtual = window.location.origin;
-            let urlCupom = dominioAtual + "/consultar_chave?chave={{ venda['id'] }}";
+            let urlCupom = dominioAtual + "/consultar_chave?chave={{ venda['chave_nfce'] or '' }}";
             let chaveNfce = "{{ venda['chave_nfce'] or '' }}";
 
             let texto = encodeURIComponent(

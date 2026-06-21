@@ -357,18 +357,14 @@ def consultar_chave():
     venda = None
     itens = []
 
+    chave_invalida = False
     if chave_buscada:
-        vendas = db.normalize_rows(db.get_all_rows(SHEET_VENDAS), int_fields=['id'], float_fields=['valor'])
-
-        # Tenta buscar pelo ID numérico (ex: "42" ou "#42")
-        id_limpo = chave_buscada.lstrip('#').strip()
-        if id_limpo.isdigit():
-            venda = next((v for v in vendas if v.get('id') == int(id_limpo)), None)
-
-        # Se não achou por ID, tenta pela chave NFC-e (busca parcial)
-        if not venda:
-            chave_limpa = chave_buscada.replace(' ', '')
-            venda = next((v for v in vendas if chave_limpa in str(v.get('chave_nfce') or '')), None)
+        chave_limpa = chave_buscada.replace(' ', '').strip()
+        if len(chave_limpa) != 44 or not chave_limpa.isdigit():
+            chave_invalida = True
+        else:
+            vendas = db.normalize_rows(db.get_all_rows(SHEET_VENDAS), int_fields=['id'], float_fields=['valor'])
+            venda = next((v for v in vendas if chave_limpa == str(v.get('chave_nfce') or '').replace(' ', '')), None)
 
         if venda:
             venda['chave_nfce'] = str(venda.get('chave_nfce') or '')
@@ -382,6 +378,7 @@ def consultar_chave():
     return render_template(
         'consultar_chave.html',
         chave_buscada=chave_buscada,
+        chave_invalida=chave_invalida,
         venda=venda,
         itens=itens,
         active_page='consultar_chave',

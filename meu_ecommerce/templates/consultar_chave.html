@@ -165,16 +165,18 @@
                 <form method="GET" action="/consultar_chave" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
                     <div style="flex: 1; min-width: 240px;">
                         <label style="display: block; font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 6px;">
-                            Chave NFC-e ou nº do Cupom:
+                            Chave NFC-e (44 dígitos):
                         </label>
                         <div class="chave-input-wrapper">
                             <input
                                 type="text"
                                 name="chave"
-                                placeholder="Digite a chave ou o número do cupom (#ID)"
+                                placeholder="Digite os 44 dígitos da chave NFC-e"
                                 value="{{ chave_buscada or '' }}"
                                 autocomplete="off"
                                 autofocus
+                                maxlength="44"
+                                inputmode="numeric"
                             >
                             <button type="button" class="clear-btn" onclick="limparBusca()">✕</button>
                         </div>
@@ -191,7 +193,12 @@
             <!-- Resultado -->
             {% if chave_buscada %}
 
-                {% if venda %}
+                {% if chave_invalida %}
+                <div class="estado-nao-encontrado">
+                    ⚠️ A chave NFC-e deve conter exatamente <strong>44 dígitos numéricos</strong>.
+                </div>
+
+                {% elif venda %}
                 <div class="resultado-card">
                     <div class="label">Chave de Acesso NFC-e</div>
                     <div class="chave-display">
@@ -276,7 +283,7 @@
 
                 {% else %}
                 <div class="estado-nao-encontrado">
-                    ⚠️ Nenhuma venda encontrada para a chave ou ID informado: <strong>{{ chave_buscada }}</strong>
+                    ⚠️ Nenhuma venda encontrada para a chave informada.
                 </div>
                 {% endif %}
 
