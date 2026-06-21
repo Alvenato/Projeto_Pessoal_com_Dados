@@ -1,0 +1,5 @@
+[phases.install]
+cmds = ['pip install -r meu_ecommerce/requirements.txt']
+
+[start]
+cmd = 'cd meu_ecommerce && gunicorn app:app'
