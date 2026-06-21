@@ -109,9 +109,9 @@
                                         <input type="text" placeholder="Cód" class="prod-cod" onkeydown="tratarEnterCodigo(event, this)" onchange="buscarPorCodigo(this)" style="padding:10px; width:70px; border-radius:6px; border:1px solid var(--border-color); text-align:center; font-weight:600;">
                                         
                                         <select name="produtos[]" class="prod-select" onchange="atualizarItem(this)" required style="padding:10px; flex:1; border-radius:6px; border:1px solid var(--border-color); background:#fff;">
-                                            <option value="" data-id="" data-preco="0.00" data-estoque="0" data-cor-primaria="" data-cor-secundaria="">-- Selecione o item --</option>
+                                            <option value="" data-id="" data-ean="" data-preco="0.00" data-estoque="0" data-cor-primaria="" data-cor-secundaria="">-- Selecione o item --</option>
                                             {% for p in produtos %}
-                                            <option value="{{ p.nome }}" data-id="{{ p.id }}" data-preco="{{ p.preco }}" data-estoque="{{ p.quantidade }}" data-cor-primaria="{{ p.cor_primaria if p.cor_primaria else '' }}" data-cor-secundaria="{{ p.cor_secundaria if p.cor_secundaria else '' }}">{{ p.nome }} (Estoque: {{ p.quantidade }})</option>
+                                            <option value="{{ p.nome }}" data-id="{{ p.id }}" data-ean="{{ p.codigo_barras or '' }}" data-preco="{{ p.preco }}" data-estoque="{{ p.quantidade }}" data-cor-primaria="{{ p.cor_primaria if p.cor_primaria else '' }}" data-cor-secundaria="{{ p.cor_secundaria if p.cor_secundaria else '' }}">{{ p.nome }} (Estoque: {{ p.quantidade }})</option>
                                             {% endfor %}
                                         </select>
                                     </div>
@@ -154,9 +154,8 @@
 
             for (var i = 0; i < select.options.length; i++) {
                 var option = select.options[i];
-                var dataId = option.getAttribute('data-id');
-                
-                if (dataId && String(dataId).trim() === String(codigoDigitado)) {
+                var ean = option.getAttribute('data-ean');
+                if (ean && ean.trim() === codigoDigitado) {
                     select.selectedIndex = i;
                     encontrado = true;
                     break;
@@ -164,7 +163,7 @@
             }
 
             if (!encontrado) {
-                alert("Produto com o código " + codigoDigitado + " não foi encontrado.");
+                alert("Produto com EAN " + codigoDigitado + " não foi encontrado.");
                 inputCod.value = "";
                 select.selectedIndex = 0;
             }
@@ -184,7 +183,7 @@
             var preco = opcaoSelecionada.getAttribute('data-preco');
             var estoqueMax = parseInt(opcaoSelecionada.getAttribute('data-estoque')) || 0;
             var produtoId = opcaoSelecionada.getAttribute('data-id');
-            
+            var produtoEan = opcaoSelecionada.getAttribute('data-ean');
             var corPrimaria = opcaoSelecionada.getAttribute('data-cor-primaria');
             var corSecundaria = opcaoSelecionada.getAttribute('data-cor-secundaria');
             
@@ -195,7 +194,7 @@
             var inputCod = row.querySelector('.prod-cod');
             
             if (inputCod) {
-                inputCod.value = produtoId || "";
+                inputCod.value = produtoEan || "";
             }
 
             row.querySelector('.prod-preco').value = preco ? parseFloat(preco).toFixed(2) : "0.00";
