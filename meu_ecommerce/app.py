@@ -370,6 +370,28 @@ def remover_produto():
     return redirect(url_for('produto'))
 
 
+@app.route('/produto/<int:produto_id>/editar', methods=['POST'])
+def editar_produto(produto_id):
+    if 'logged_in' not in session:
+        return redirect(url_for('login'))
+    nome = request.form.get('nome', '').strip()
+    preco = request.form.get('preco', '0').replace(',', '.')
+    quantidade = request.form.get('quantidade', '0')
+    cor_primaria = request.form.get('cor_primaria', '').strip()
+    cor_secundaria = request.form.get('cor_secundaria', '').strip()
+    codigo_barras = request.form.get('codigo_barras', '').strip()
+    campos = ['id', 'nome', 'preco', 'quantidade', 'cor_primaria', 'cor_secundaria', 'codigo_barras']
+    db.delete_row(SHEET_PRODUTOS, 'id', produto_id)
+    db.append_row(SHEET_PRODUTOS, campos, {
+        'id': produto_id, 'nome': nome,
+        'preco': float(preco) if preco else 0.0,
+        'quantidade': int(quantidade) if quantidade else 0,
+        'cor_primaria': cor_primaria, 'cor_secundaria': cor_secundaria,
+        'codigo_barras': codigo_barras,
+    })
+    return redirect(url_for('produto'))
+
+
 # ─────────────────────────── CONSULTAR CHAVE ───────────────────────────────
 
 @app.route('/consultar_chave')

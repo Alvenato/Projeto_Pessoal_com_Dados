@@ -8,6 +8,8 @@
     <style>
         .btn-delete { background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px; transition: background 0.2s; }
         .btn-delete:hover { background-color: #c82333; }
+        .btn-edit  { background-color: #2563eb; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px; margin-right: 4px; }
+        .btn-edit:hover { background-color: #1d4ed8; }
         .btn-block { width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
         .btn-submit { background-color: #28a745; color: white; }
         table th, table td { text-align: left; padding: 10px; vertical-align: middle; }
@@ -15,9 +17,12 @@
         .badge-esgotado { background-color: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; display: inline-block; }
         .color-picker-wrapper { display: flex; align-items: center; gap: 10px; background: #fafafa; padding: 8px 12px; border: 1px solid #ccc; border-radius: 8px; height: 45px; box-sizing: border-box; }
         .input-color-map { -webkit-appearance: none; width: 30px; height: 30px; background-color: transparent; border: none; cursor: pointer; padding: 0; }
-        .color-disabled { opacity: 0.4; pointer-events: none; }
-        .color-badge { display: inline-block; width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(0, 0, 0, 0.15); vertical-align: middle; }
+        .color-badge { display: inline-block; width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.15); vertical-align: middle; }
         .color-container-td { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+        .modo-edicao { background:#eff6ff; border:2px solid #2563eb; border-radius:10px; padding:12px 16px; margin-bottom:14px; display:none; align-items:center; justify-content:space-between; }
+        .modo-edicao.ativo { display:flex; }
+        .modo-edicao span { color:#1d4ed8; font-weight:700; font-size:13px; }
+        .btn-cancelar { background:#fff; color:#1d4ed8; border:1px solid #2563eb; border-radius:7px; padding:6px 14px; font-size:12px; font-weight:600; cursor:pointer; }
     </style>
 </head>
 <body>
@@ -27,67 +32,75 @@
                 <img src="{{ url_for('static', filename='images/logo.png') }}" class="sidebar-logo" alt="Logo Menu">
             </div>
             <h3 class="sidebar-title">PDV Control</h3>
-            
-            <a href="{{ url_for('admin') }}" class="nav-btn vendas {% if active_page == 'admin' %}active{% endif %}">Histórico de Vendas</a>
-            <a href="{{ url_for('cliente') }}" class="nav-btn cliente {% if active_page == 'cliente' %}active{% endif %}">Cadastrar Cliente</a>
-            <a href="{{ url_for('produto') }}" class="nav-btn produto {% if active_page == 'produto' %}active{% endif %}">Cadastrar Produto</a>
-            <a href="{{ url_for('caixa') }}" class="nav-btn caixa {% if active_page == 'caixa' %}active{% endif %}">Frente de Caixa</a>
-            <a href="{{ url_for('consultar_chave') }}" class="nav-btn vendas {% if active_page == 'consultar_chave' %}active{% endif %}">Consultar Chave</a>
-            
+
+            <a href="{{ url_for('admin') }}"          class="nav-btn vendas  {% if active_page == 'admin'          %}active{% endif %}">Histórico de Vendas</a>
+            <a href="{{ url_for('cliente') }}"        class="nav-btn cliente {% if active_page == 'cliente'        %}active{% endif %}">Cadastrar Cliente</a>
+            <a href="{{ url_for('produto') }}"        class="nav-btn produto {% if active_page == 'produto'        %}active{% endif %}">Cadastrar Produto</a>
+            <a href="{{ url_for('caixa') }}"          class="nav-btn caixa   {% if active_page == 'caixa'          %}active{% endif %}">Frente de Caixa</a>
+            <a href="{{ url_for('consultar_chave') }}" class="nav-btn vendas {% if active_page == 'consultar_chave'%}active{% endif %}">Consultar Chave</a>
+
             <a href="{{ url_for('logout') }}" class="nav-btn logout">Sair</a>
         </nav>
-        
+
         <main class="content">
-            <h2>Gerenciamento de Produtos</h2>
+            <h2 id="p-titulo">Gerenciamento de Produtos</h2>
             <div style="display: grid; grid-template-columns: 1fr 1.8fr; gap: 35px;">
-                
+
                 <div>
                     <div class="table-container">
-                        <h3 style="margin-top:0; margin-bottom: 20px; font-size:18px;">Entrada de Item</h3>
-                        <form action="{{ url_for('produto') }}" method="POST" style="display: flex; flex-direction: column; gap: 15px;">
-                            
-                            <label style="font-weight: 600; font-size: 13px;">Código de Barras (EAN):</label>
-                            <input type="text" name="codigo_barras" id="codigo_barras" placeholder="Digite ou leia com leitor" inputmode="numeric" style="padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-family: monospace; letter-spacing: 1px;">
+                        <h3 id="p-subtitulo" style="margin-top:0; margin-bottom:14px; font-size:18px;">Entrada de Item</h3>
 
-                            <label style="font-weight: 600; font-size: 13px;">Nome Comercial:</label>
-                            <input type="text" name="nome" placeholder="Ex: Refrigerante Lata 350ml" required style="padding: 12px; border: 1px solid #ccc; border-radius: 8px;">
-                            
-                            <label style="font-weight: 600; font-size: 13px;">Preço de Venda (R$):</label>
-                            <input type="number" step="0.01" name="preco" placeholder="0.00" required style="padding: 12px; border: 1px solid #ccc; border-radius: 8px;">
-                            
-                            <label style="font-weight: 600; font-size: 13px;">Quantidade inicial:</label>
-                            <input type="number" name="quantidade" placeholder="Ex: 10" min="0" required style="padding: 12px; border: 1px solid #ccc; border-radius: 8px;">
-                            
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <!-- Banner modo edição -->
+                        <div class="modo-edicao" id="aviso-edicao">
+                            <span>✏️ Modo edição</span>
+                            <button type="button" class="btn-cancelar" onclick="cancelarEdicao()">✕ Cancelar</button>
+                        </div>
+
+                        <form id="form-produto" action="{{ url_for('produto') }}" method="POST" style="display:flex; flex-direction:column; gap:15px;">
+                            <input type="hidden" name="id" id="p-id">
+
+                            <label style="font-weight:600; font-size:13px;">Código de Barras (EAN):</label>
+                            <input type="text" name="codigo_barras" id="p-codigo_barras" placeholder="Digite ou leia com leitor" inputmode="numeric" style="padding:12px; border:1px solid #ccc; border-radius:8px; font-family:monospace; letter-spacing:1px;">
+
+                            <label style="font-weight:600; font-size:13px;">Nome Comercial:</label>
+                            <input type="text" name="nome" id="p-nome" placeholder="Ex: Refrigerante Lata 350ml" required style="padding:12px; border:1px solid #ccc; border-radius:8px;">
+
+                            <label style="font-weight:600; font-size:13px;">Preço de Venda (R$):</label>
+                            <input type="number" step="0.01" name="preco" id="p-preco" placeholder="0.00" required style="padding:12px; border:1px solid #ccc; border-radius:8px;">
+
+                            <label style="font-weight:600; font-size:13px;">Quantidade em Estoque:</label>
+                            <input type="number" name="quantidade" id="p-quantidade" placeholder="Ex: 10" min="0" required style="padding:12px; border:1px solid #ccc; border-radius:8px;">
+
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
                                 <div>
-                                    <label style="font-weight: 600; font-size: 13px;">Cor Primária:</label>
+                                    <label style="font-weight:600; font-size:13px;">Cor Primária:</label>
                                     <div class="color-picker-wrapper">
-                                        <input type="color" name="cor_primaria" value="#3b82f6" class="input-color-map">
+                                        <input type="color" name="cor_primaria" id="p-cor_primaria" value="#3b82f6" class="input-color-map">
                                     </div>
                                 </div>
                                 <div>
-                                    <label style="font-weight: 600; font-size: 13px;">Cor Secundária:</label>
+                                    <label style="font-weight:600; font-size:13px;">Cor Secundária:</label>
                                     <div class="color-picker-wrapper">
-                                        <input type="color" name="cor_secundaria" value="#ef4444" class="input-color-map">
+                                        <input type="color" name="cor_secundaria" id="p-cor_secundaria" value="#ef4444" class="input-color-map">
                                     </div>
                                 </div>
                             </div>
-                            
-                            <button type="submit" class="btn-submit btn-block" style="margin-top: 10px;">Salvar no Estoque</button>
+
+                            <button type="submit" id="p-btn-submit" class="btn-submit btn-block" style="margin-top:10px;">Salvar no Estoque</button>
                         </form>
                     </div>
                 </div>
 
                 <div>
-                    <div class="table-container" style="max-height: 520px; overflow-y: auto;">
-                        <h3 style="margin-top:0; margin-bottom: 20px; font-size:18px;">Itens no Catálogo</h3>
+                    <div class="table-container" style="max-height:520px; overflow-y:auto;">
+                        <h3 style="margin-top:0; margin-bottom:20px; font-size:18px;">Itens no Catálogo</h3>
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Cód. Interno</th>
+                                    <th>EAN</th>
                                     <th>Nome do Produto</th>
-                                    <th>Preço de Tabela</th>
-                                    <th>Qtd. Estoque</th>
+                                    <th>Preço</th>
+                                    <th>Estoque</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
@@ -102,25 +115,26 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <span style="font-weight:600; display: block;">{{ p.nome }}</span>
+                                        <span style="font-weight:600; display:block;">{{ p.nome }}</span>
                                         <div class="color-container-td">
-                                            {% if p.cor_primaria %}<span class="color-badge" style="background-color: {{ p.cor_primaria }};"></span>{% endif %}
-                                            {% if p.cor_secundaria %}<span class="color-badge" style="background-color: {{ p.cor_secundaria }};"></span>{% endif %}
+                                            {% if p.cor_primaria %}<span class="color-badge" style="background-color:{{ p.cor_primaria }};"></span>{% endif %}
+                                            {% if p.cor_secundaria %}<span class="color-badge" style="background-color:{{ p.cor_secundaria }};"></span>{% endif %}
                                         </div>
                                     </td>
-                                    <td style="font-weight: 700;">R$ {{ "%.2f"|format(p.preco) }}</td>
-                                    <td style="font-weight: 600;">
+                                    <td style="font-weight:700;">R$ {{ "%.2f"|format(p.preco) }}</td>
+                                    <td style="font-weight:600;">
                                         {% if p.quantidade > 0 %}{{ p.quantidade }} un{% else %}<span class="badge-esgotado">Esgotado</span>{% endif %}
                                     </td>
-                                    <td class="text-center">
-                                        <form action="{{ url_for('remover_produto') }}" method="POST" onsubmit="return confirm('Tem certeza?');">
+                                    <td class="text-center" style="white-space:nowrap;">
+                                        <button class="btn-edit" onclick='editarProduto({{ p | tojson }})'>✏️ Editar</button>
+                                        <form action="{{ url_for('remover_produto') }}" method="POST" style="display:inline;" onsubmit="return confirm('Remover {{ p.nome }}?');">
                                             <input type="hidden" name="produto_id" value="{{ p.id }}">
-                                            <button type="submit" class="btn-delete">Remover</button>
+                                            <button type="submit" class="btn-delete">🗑️ Remover</button>
                                         </form>
                                     </td>
                                 </tr>
                                 {% else %}
-                                <tr><td colspan="5" style="text-align: center; color: #999;">Nenhum produto cadastrado.</td></tr>
+                                <tr><td colspan="5" style="text-align:center; color:#999;">Nenhum produto cadastrado.</td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -129,5 +143,31 @@
             </div>
         </main>
     </div>
+
+    <script>
+        function editarProduto(p) {
+            document.getElementById('p-id').value          = p.id          || '';
+            document.getElementById('p-codigo_barras').value = p.codigo_barras || '';
+            document.getElementById('p-nome').value        = p.nome        || '';
+            document.getElementById('p-preco').value       = p.preco       || '';
+            document.getElementById('p-quantidade').value  = p.quantidade  || '';
+            document.getElementById('p-cor_primaria').value   = p.cor_primaria   || '#3b82f6';
+            document.getElementById('p-cor_secundaria').value = p.cor_secundaria || '#ef4444';
+            document.getElementById('form-produto').action = '/produto/' + p.id + '/editar';
+            document.getElementById('p-subtitulo').textContent   = 'Editar Produto';
+            document.getElementById('p-btn-submit').textContent  = 'Salvar Alterações';
+            document.getElementById('aviso-edicao').classList.add('ativo');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEdicao() {
+            document.getElementById('form-produto').reset();
+            document.getElementById('form-produto').action = '{{ url_for("produto") }}';
+            document.getElementById('p-id').value = '';
+            document.getElementById('p-subtitulo').textContent  = 'Entrada de Item';
+            document.getElementById('p-btn-submit').textContent = 'Salvar no Estoque';
+            document.getElementById('aviso-edicao').classList.remove('ativo');
+        }
+    </script>
 </body>
 </html>
