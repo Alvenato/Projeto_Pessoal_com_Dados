@@ -200,11 +200,13 @@
 
             let dominioAtual = window.location.origin;
             let urlCupom = dominioAtual + "/consultar_chave?chave={{ venda['id'] }}";
+            let chaveNfce = "{{ venda['chave_nfce'] or '' }}";
 
             let texto = encodeURIComponent(
                 "Olá! Obrigado pela preferência em nosso estabelecimento.\n\n" +
-                "Aqui está o link direto para visualizar o seu Cupom Fiscal completo:\n\n" +
-                urlCupom
+                "Acesse o link abaixo para consultar o seu Cupom Fiscal:\n" +
+                urlCupom +
+                (chaveNfce ? "\n\nChave NFC-e:\n" + chaveNfce : "")
             );
 
             window.open("https://wa.me/" + foneLimpo + "?text=" + texto, "_blank");
