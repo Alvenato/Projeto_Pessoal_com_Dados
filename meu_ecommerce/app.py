@@ -338,16 +338,18 @@ def produto():
         quantidade = request.form.get('quantidade', '0')
         cor_primaria = request.form.get('cor_primaria', '').strip()
         cor_secundaria = request.form.get('cor_secundaria', '').strip()
+        codigo_barras = request.form.get('codigo_barras', '').strip()
 
         if nome:
             novo_id = db.next_id(SHEET_PRODUTOS)
-            db.append_row(SHEET_PRODUTOS, ['id', 'nome', 'preco', 'quantidade', 'cor_primaria', 'cor_secundaria'], {
+            db.append_row(SHEET_PRODUTOS, ['id', 'nome', 'preco', 'quantidade', 'cor_primaria', 'cor_secundaria', 'codigo_barras'], {
                 'id': novo_id,
                 'nome': nome,
                 'preco': float(preco) if preco else 0.0,
                 'quantidade': int(quantidade) if quantidade else 0,
                 'cor_primaria': cor_primaria,
                 'cor_secundaria': cor_secundaria,
+                'codigo_barras': codigo_barras,
             })
 
         return redirect(url_for('produto'))

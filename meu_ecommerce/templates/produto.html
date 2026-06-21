@@ -46,6 +46,9 @@
                         <h3 style="margin-top:0; margin-bottom: 20px; font-size:18px;">Entrada de Item</h3>
                         <form action="{{ url_for('produto') }}" method="POST" style="display: flex; flex-direction: column; gap: 15px;">
                             
+                            <label style="font-weight: 600; font-size: 13px;">Código de Barras (EAN):</label>
+                            <input type="text" name="codigo_barras" id="codigo_barras" placeholder="Digite ou leia com leitor" inputmode="numeric" style="padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-family: monospace; letter-spacing: 1px;">
+
                             <label style="font-weight: 600; font-size: 13px;">Nome Comercial:</label>
                             <input type="text" name="nome" placeholder="Ex: Refrigerante Lata 350ml" required style="padding: 12px; border: 1px solid #ccc; border-radius: 8px;">
                             
@@ -94,6 +97,9 @@
                                     <td><span style="color: #666; font-weight:500;">#{{ "%04d"|format(p.id) }}</span></td>
                                     <td>
                                         <span style="font-weight:600; display: block;">{{ p.nome }}</span>
+                                        {% if p.codigo_barras %}
+                                        <span style="font-size:11px; color:#64748b; font-family:monospace;">{{ p.codigo_barras }}</span>
+                                        {% endif %}
                                         <div class="color-container-td">
                                             {% if p.cor_primaria %}<span class="color-badge" style="background-color: {{ p.cor_primaria }};"></span>{% endif %}
                                             {% if p.cor_secundaria %}<span class="color-badge" style="background-color: {{ p.cor_secundaria }};"></span>{% endif %}
