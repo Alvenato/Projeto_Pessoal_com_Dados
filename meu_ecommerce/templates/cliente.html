@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2.1">
     <title>Cadastro de Cliente</title>
+    <style>
+        .modo-edicao { background:#eff6ff; border:2px solid #2563eb; border-radius:12px; padding:16px 20px; margin-bottom:16px; display:none; align-items:center; justify-content:space-between; }
+        .modo-edicao.ativo { display:flex; }
+        .modo-edicao span { color:#1d4ed8; font-weight:700; font-size:14px; }
+        .btn-cancelar-edicao { background:#fff; color:#1d4ed8; border:1px solid #2563eb; border-radius:8px; padding:7px 16px; font-size:13px; font-weight:600; cursor:pointer; }
+    </style>
 </head>
 <body>
     <div class="wrapper">
@@ -13,41 +19,45 @@
                 <img src="{{ url_for('static', filename='images/logo.png') }}" class="sidebar-logo" alt="Logo Menu">
             </div>
             <h3 class="sidebar-title">PDV Control</h3>
-            
+
             <a href="/admin" class="nav-btn vendas {% if active_page == 'admin' %}active{% endif %}">Histórico de Vendas</a>
             <a href="/cliente" class="nav-btn cliente {% if active_page == 'cliente' %}active{% endif %}">Cadastrar Cliente</a>
             <a href="/produto" class="nav-btn produto {% if active_page == 'produto' %}active{% endif %}">Cadastrar Produto</a>
             <a href="/caixa" class="nav-btn caixa {% if active_page == 'caixa' %}active{% endif %}">Frente de Caixa</a>
             <a href="/consultar_chave" class="nav-btn vendas {% if active_page == 'consultar_chave' %}active{% endif %}">Consultar Chave</a>
-            
+
             <a href="/logout" class="nav-btn logout">Sair</a>
         </nav>
-        
+
         <main class="content">
-            <h2>Cadastro Detalhado de Cliente</h2>
-            
-            <form action="/cliente" method="POST" class="grid-form">
-                <input type="text" name="nome" placeholder="Nome Completo" required>
-                <input type="email" name="email" placeholder="E-mail Principal">
-                <input type="text" name="telefone" placeholder="Telefone Fixo">
-                <input type="text" name="whatsapp" placeholder="WhatsApp / Celular">
-                
-                <input type="text" id="cep" name="cep" placeholder="CEP" onblur="pesquisacep(this.value)" required>
-                <input type="text" id="logradouro" name="logradouro" placeholder="Logradouro">
-                <input type="text" id="numero" name="numero" placeholder="Número">
-                <input type="text" id="complemento" name="complemento" placeholder="Complemento">
-                <input type="text" id="bairro" name="bairro" placeholder="Bairro">
-                <input type="text" id="cidade" name="cidade" placeholder="Cidade">
-                <input type="text" id="uf" name="uf" placeholder="UF">
-                
-                <input type="date" name="data_nasc">
-                <select name="genero">
+            <h2 id="form-titulo">Cadastro Detalhado de Cliente</h2>
+
+            <!-- Aviso de modo edição -->
+            <div class="modo-edicao" id="aviso-edicao">
+                <span>✏️ Modo edição — altere os campos e clique em Salvar Alterações</span>
+                <button type="button" class="btn-cancelar-edicao" onclick="cancelarEdicao()">✕ Cancelar</button>
+            </div>
+
+            <form id="form-cliente" action="/cliente" method="POST" class="grid-form">
+                <input type="hidden" name="id" id="f-id">
+                <input type="text"  name="nome"        id="f-nome"        placeholder="Nome Completo" required>
+                <input type="email" name="email"       id="f-email"       placeholder="E-mail Principal">
+                <input type="text"  name="telefone"    id="f-telefone"    placeholder="Telefone Fixo">
+                <input type="text"  name="whatsapp"    id="f-whatsapp"    placeholder="WhatsApp / Celular">
+                <input type="text"  name="cep"         id="cep"           placeholder="CEP" onblur="pesquisacep(this.value)">
+                <input type="text"  name="logradouro"  id="logradouro"    placeholder="Logradouro">
+                <input type="text"  name="numero"      id="f-numero"      placeholder="Número">
+                <input type="text"  name="complemento" id="f-complemento" placeholder="Complemento">
+                <input type="text"  name="bairro"      id="bairro"        placeholder="Bairro">
+                <input type="text"  name="cidade"      id="cidade"        placeholder="Cidade">
+                <input type="text"  name="uf"          id="uf"            placeholder="UF">
+                <input type="date"  name="data_nasc"   id="f-data_nasc">
+                <select name="genero" id="f-genero">
                     <option value="" disabled selected style="display:none;">Selecione o Gênero</option>
                     <option value="M">Masculino</option>
                     <option value="F">Feminino</option>
                 </select>
-                
-                <button type="submit" class="btn-submit">Salvar Registro</button>
+                <button type="submit" id="btn-submit" class="btn-submit">Salvar Registro</button>
             </form>
 
             <div class="clientes-cadastrados-container" style="margin-top: 40px;">
@@ -60,7 +70,7 @@
                                 <th>E-mail</th>
                                 <th>WhatsApp / Celular</th>
                                 <th>Cidade/UF</th>
-                                <th style="width:130px; text-align:center;">Ações</th>
+                                <th style="width:140px; text-align:center;">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -72,7 +82,7 @@
                                     <td>{{ cliente.whatsapp or cliente.telefone or '-' }}</td>
                                     <td>{{ cliente.cidade or '-' }}/{{ cliente.uf or '-' }}</td>
                                     <td style="text-align:center; white-space:nowrap;">
-                                        <button onclick="abrirEdicao({{ cliente | tojson }})" style="background:#2563eb; color:#fff; border:none; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:600; cursor:pointer; margin-right:4px;">✏️ Editar</button>
+                                        <button onclick="editarCliente({{ cliente | tojson }})" style="background:#2563eb; color:#fff; border:none; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:600; cursor:pointer; margin-right:4px;">✏️ Editar</button>
                                         <form method="POST" action="/cliente/{{ cliente.id }}/excluir" style="display:inline;" onsubmit="return confirm('Excluir {{ cliente.nome }}?')">
                                             <button type="submit" style="background:#ef4444; color:#fff; border:none; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:600; cursor:pointer;">🗑️ Excluir</button>
                                         </form>
@@ -91,72 +101,49 @@
         </main>
     </div>
 
-    <!-- Modal de edição -->
-    <div id="modal-edicao" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center;">
-        <div style="background:#fff; border-radius:16px; padding:36px 32px; width:100%; max-width:600px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-            <h3 style="margin:0 0 24px; color:#1e293b; font-size:20px;">✏️ Editar Cliente</h3>
-            <form id="form-edicao" method="POST" class="grid-form">
-                <input type="hidden" name="id" id="edit-id">
-                <input type="text" name="nome" id="edit-nome" placeholder="Nome Completo" required>
-                <input type="email" name="email" id="edit-email" placeholder="E-mail">
-                <input type="text" name="telefone" id="edit-telefone" placeholder="Telefone Fixo">
-                <input type="text" name="whatsapp" id="edit-whatsapp" placeholder="WhatsApp / Celular">
-                <input type="text" name="cep" id="edit-cep" placeholder="CEP">
-                <input type="text" name="logradouro" id="edit-logradouro" placeholder="Logradouro">
-                <input type="text" name="numero" id="edit-numero" placeholder="Número">
-                <input type="text" name="complemento" id="edit-complemento" placeholder="Complemento">
-                <input type="text" name="bairro" id="edit-bairro" placeholder="Bairro">
-                <input type="text" name="cidade" id="edit-cidade" placeholder="Cidade">
-                <input type="text" name="uf" id="edit-uf" placeholder="UF">
-                <input type="date" name="data_nasc" id="edit-data_nasc">
-                <select name="genero" id="edit-genero">
-                    <option value="">Selecione o Gênero</option>
-                    <option value="M">Masculino</option>
-                    <option value="F">Feminino</option>
-                </select>
-                <div style="display:flex; gap:12px; grid-column:1/-1; margin-top:8px;">
-                    <button type="submit" class="btn-submit" style="flex:1; margin:0;">Salvar Alterações</button>
-                    <button type="button" onclick="fecharModal()" style="flex:1; padding:12px; background:#f1f5f9; color:#1e293b; border:1px solid #e2e8f0; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;">Cancelar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
-        function abrirEdicao(c) {
-            document.getElementById('form-edicao').action = '/cliente/' + c.id + '/editar';
-            ['id','nome','email','telefone','whatsapp','cep','logradouro','numero',
-             'complemento','bairro','cidade','uf','data_nasc','genero'].forEach(function(f) {
-                var el = document.getElementById('edit-' + f);
-                if (el) el.value = c[f] || '';
+        var camposMap = {
+            'id': 'f-id', 'nome': 'f-nome', 'email': 'f-email', 'telefone': 'f-telefone',
+            'whatsapp': 'f-whatsapp', 'cep': 'cep', 'logradouro': 'logradouro',
+            'numero': 'f-numero', 'complemento': 'f-complemento', 'bairro': 'bairro',
+            'cidade': 'cidade', 'uf': 'uf', 'data_nasc': 'f-data_nasc', 'genero': 'f-genero'
+        };
+
+        function editarCliente(c) {
+            Object.keys(camposMap).forEach(function(campo) {
+                var el = document.getElementById(camposMap[campo]);
+                if (el) el.value = c[campo] || '';
             });
-            var modal = document.getElementById('modal-edicao');
-            modal.style.display = 'flex';
+            document.getElementById('form-cliente').action = '/cliente/' + c.id + '/editar';
+            document.getElementById('form-titulo').textContent = 'Editar Cliente';
+            document.getElementById('btn-submit').textContent = 'Salvar Alterações';
+            document.getElementById('aviso-edicao').classList.add('ativo');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-        function fecharModal() {
-            document.getElementById('modal-edicao').style.display = 'none';
+
+        function cancelarEdicao() {
+            document.getElementById('form-cliente').reset();
+            document.getElementById('form-cliente').action = '/cliente';
+            document.getElementById('f-id').value = '';
+            document.getElementById('form-titulo').textContent = 'Cadastro Detalhado de Cliente';
+            document.getElementById('btn-submit').textContent = 'Salvar Registro';
+            document.getElementById('aviso-edicao').classList.remove('ativo');
         }
-        document.getElementById('modal-edicao').addEventListener('click', function(e) {
-            if (e.target === this) fecharModal();
-        });
 
         function meu_callback(conteudo) {
             if (!("erro" in conteudo)) {
-                document.getElementById('logradouro').value=(conteudo.logradouro);
-                document.getElementById('bairro').value=(conteudo.bairro);
-                document.getElementById('cidade').value=(conteudo.localidade);
-                document.getElementById('uf').value=(conteudo.uf);
+                document.getElementById('logradouro').value = conteudo.logradouro;
+                document.getElementById('bairro').value = conteudo.bairro;
+                document.getElementById('cidade').value = conteudo.localidade;
+                document.getElementById('uf').value = conteudo.uf;
             }
         }
         function pesquisacep(valor) {
             var cep = valor.replace(/\D/g, '');
-            if (cep != "") {
-                var validacep = /^[0-9]{8}$/;
-                if(validacep.test(cep)) {
-                    var script = document.createElement('script');
-                    script.src = 'https://viacep.com.br/ws/'+ cep + '/json/?callback=meu_callback';
-                    document.body.appendChild(script);
-                }
+            if (cep !== "" && /^[0-9]{8}$/.test(cep)) {
+                var script = document.createElement('script');
+                script.src = 'https://viacep.com.br/ws/' + cep + '/json/?callback=meu_callback';
+                document.body.appendChild(script);
             }
         }
     </script>
