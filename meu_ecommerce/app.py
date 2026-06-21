@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 import datetime
+
+BRT = datetime.timezone(datetime.timedelta(hours=-3))
 import os
 import random
 import string
@@ -227,7 +229,7 @@ def registrar_venda():
     db.append_row(SHEET_VENDAS, ['id', 'cliente', 'data', 'chave_nfce', 'valor', 'forma_pagamento'], {
         'id': novo_id,
         'cliente': cliente_nome,
-        'data': datetime.datetime.now().strftime("%d/%m/%Y %H:%M"),
+        'data': datetime.datetime.now(BRT).strftime("%d/%m/%Y %H:%M"),
         'chave_nfce': chave_nfce,
         'valor': total_venda,
         'forma_pagamento': forma_pagamento,
